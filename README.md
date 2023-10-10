@@ -4,6 +4,8 @@ A minimalistic unit test framework for C.
 ## Introduction
 `tst` is a lightweight unit testing framework designed for C programs. It provides a suite of functionalities to define, group, and validate test cases, while offering utilities for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fosters easy test integration into C projects.
 
+Just include `tst.h` and you're ready to write your test cases.
+
 ## Core Functions Overview
 1. **tstrun( ... )**
    - **Purpose**: Groups test cases and outputs the title.
