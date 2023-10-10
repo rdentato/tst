@@ -5,6 +5,7 @@
 #define TST_VERSION    0x0001000B
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <time.h>
 
