@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <time.h>
 
 static volatile int tst_zero = 0;
@@ -17,18 +16,19 @@ static int tst_pass = 0;
 static int tst_fail = 0;
 static int tst_skip = 0;
 static int tst_case = 0;
+static int tst_error = 0;
 
 #define tst_init_case()   (tst_case_pass=tst_case_fail=tst_case_skip=0)
 #define tst_init_run()    (tst_pass=tst_fail=tst_skip=tst_init_case())
 
 #define tst_prtf(...)     (fprintf(stderr, __VA_ARGS__), fprintf(stderr, " » %s:%d\n", __FILE__, __LINE__), tst_zero=0)
 
-#define tstcheck(x_,...)  do { errno = !(x_); tst_prtf("%s %s", errno?(tst_fail++, tst_case_fail++,"FAIL├┬") \
+#define tstcheck(x_,...)  do { tst_error = !(x_); tst_prtf("%s %s", tst_error?(tst_fail++, tst_case_fail++,"FAIL├┬") \
                                                                      :(tst_pass++, tst_case_pass++,"PASS│ "), #x_);\
-                               if (errno) {fprintf(stderr,"    │╰ " __VA_ARGS__); fputc('\n',stderr);} \
+                               if (tst_error) {fprintf(stderr,"    │╰ " __VA_ARGS__); fputc('\n',stderr);} \
                           } while(0)
 
-#define tstassert(...) do { tstcheck(__VA_ARGS__); if (errno) abort();} while(0)
+#define tstassert(...) do { tstcheck(__VA_ARGS__); if (tst_error) abort();} while(0)
 
 #define tstrun(...)    for (int tst=!(fputs ("FILE ▷ " __FILE__, stderr), fprintf(stderr," " __VA_ARGS__ ), fputc('\n',stderr), tst_init_run()); \
                              tst ; tst = 0, fprintf(stderr,"RSLT ▷ %d KO | %d OK | %d SKIP\n", tst_fail, tst_pass, tst_skip))
