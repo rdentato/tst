@@ -148,6 +148,131 @@ RSLT ▷ 1 KO | 3 OK | 1 SKIP
 ## Temporary disabling
 There are cases where you want to If you want to switch off a test case, a check, a group, and so on
 
+## Tagging and Grouping in `tst`: Selective Test Execution
+
+In the `tst` framework, the ability to tag and group tests is a powerful feature that allows developers to selectively execute specific sets of tests. This is especially useful in scenarios where you might want to run only a subset of your tests, such as when you're working on a specific feature or debugging a particular module.
+
+### How to Tag and Group Tests:
+
+1. **Defining Tags**: 
+   - Use the `tsttags` macro at the beginning of your test file to define all the tags you plan to use.
+   - **Example**:
+     ```c
+     tsttags(Group1, Group2, Group3)
+     ```
+
+2. **Enabling Command-Line Argument Parsing**:
+   - In your `main` function, use `tstsettags(argc, argv);`. This line parses command-line arguments to determine which tags are enabled or disabled.
+   
+3. **Grouping Tests Using Tags**:
+   - Within `tstrun()`, use the `tstgroup` function in combination with the `tsttag` function to conditionally run specific blocks of tests based on the tags that are active.
+   - `tsttag(TagName)` returns a boolean value indicating whether a specific tag is active.
+   - **Examples**:
+     ```c
+     tstrun() {
+       tstgroup(tsttag(Group2) || tsttag(Group3)) {
+         // This block will run only if either Group2 or Group3 is enabled.
+       }
+     }
+     ```
+
+     ```c
+     tstrun() {
+       tstgroup(!tsttag(Group1) && tsttag(Group3)) {
+         // This block will run only if Group1 is disabled and Group3 is enabled.
+       }
+     }
+     ```
+
+### Selectively Running Tests from the Command-Line:
+
+When executing your tests from the command line, you can enable or disable specific groups of tests by referencing their tags.
+
+- **Syntax**:
+  - Use a `-` prefix to disable a group.
+  - Use a `+` prefix to enable a group.
+  - Use `-*` to disable all tagged tests.
+
+- **Examples**:
+  - To run only the tests tagged as "Group3", excluding tests tagged as "Group1" and "Group2":
+    ```
+    my_tests -Group1 -Group2
+    ```
+    
+  - To disable all tagged tests:
+    ```
+    my_tests -*
+    ```
+    
+  - To run only the tests tagged as "Group2":
+    ```
+    my_tests -* +Group2
+    ```
+
+  - To know which tags are defined:
+    ```
+    my_tests ?
+    ```
+### Benefits:
+
+Tagging and grouping tests offer the flexibility to narrow down the testing focus, which can lead to quicker debugging and development cycles. This feature is especially advantageous in large projects with numerous test cases or in continuous integration environments where only a subset of tests might be relevant to run in certain scenarios.
+
+
+## Integrating `tst` into Your Project: A Simple Guide
+
+Integrating `tst` into your C project is straightforward. By organizing your test files and leveraging the provided `makefile`, you can seamlessly manage and execute your unit tests. Here's a step-by-step guide to doing this:
+
+### 1. **Set Up a `test` Directory**
+
+To keep your project organized, create a separate `test` directory within your project's root folder. This dedicated directory will house your unit test files, `tst.h` header, and the `makefile`.
+
+```bash
+mkdir test
+```
+
+### 2. **Copy Essential Files**
+
+- **`tst.h`**: This is the main header file for the `tst` framework. Ensure this is present in the `test` directory to include it in your test files.
+  
+- **`makefile`**: The provided `makefile` will contain rules to compile and run your unit tests. Ensure this is also placed within the `test` directory.
+
+```bash
+cp path_to_tst_files/tst.h path_to_project/test/
+cp path_to_tst_files/test/makefile path_to_project/test/
+```
+
+### 3. **Naming Convention for Test Files**
+
+To ensure that the `makefile` correctly identifies unit test files:
+
+- Name your test files with the prefix `t_`, followed by a descriptive name, and then the `.c` extension. For example: `t_mathFunctions.c`.
+
+- By sticking to this naming convention, the `makefile` can easily detect which C files in the directory are intended as unit tests.
+
+### 4. **Compiling and Running Tests**
+
+- **Compile a Single Test**:
+  If you have a test file named `t_xxx.c` and wish to compile it, simply run:
+
+  ```bash
+  make t_xxx
+  ```
+
+  This will compile the `t_xxx.c` file, creating an executable for the test.
+
+- **Compile and Run All Tests**:
+  To compile and execute all unit tests present in the `test` directory:
+
+  ```bash
+  make runtest
+  ```
+
+  The `makefile` will automatically detect all C files prefixed with `t_`, compile them, and execute each test.
+
+### Benefits
+
+By setting up a dedicated `test` directory and leveraging the provided `makefile`, you can effortlessly manage and run unit tests using the `tst` framework. This structure not only ensures a clean project layout but also streamlines the testing process, making it easier for developers to maintain and expand upon their test suites.
+
 ## Conclusion
 `tst` offers a user-friendly syntax to facilitate streamlined testing without exhaustive setup or dependencies. Developers may swiftly integrate, run, and diagnose tests, ensuring the robustness and reliability of their C code.
 

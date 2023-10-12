@@ -9,7 +9,7 @@ _EXE=
 STATIC=
 endif
 
-CFLAGS=-O2 -Wall -I.. $(STATIC) -DDEBUG
+CFLAGS=-O2 -Wall -I../src $(STATIC) -DDEBUG
 LIBS=
 
 TESTS_SRC=$(wildcard t_*.c)
@@ -42,5 +42,3 @@ runtest: all
 clean:
 	rm -f $(TESTS) $(TESTS:=.exe) $(TESTS:=.o) test.log
 
-cleanall: clean
-	make -C $(SRCDIR) clean
