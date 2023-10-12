@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
   $ my_tests -* +FileOnly
   FILE ▷ t_tst01.c 
   SKIP├┬ tsttag(NoDB) && !tsttag(SimpleRun) » t_tst01.c:9
-    │╰ 
+      │╰ 
   RSLT ▷ 0 KO | 0 OK | 1 SKIP
 ```    
 ### Benefits:
