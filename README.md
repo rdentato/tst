@@ -213,6 +213,36 @@ When executing your tests from the command line, you can enable or disable speci
     ```
     my_tests ?
     ```
+
+### Full example:
+
+```c
+#include "tst.h"
+
+tsttags(NoDB, FileOnly, SimpleRun);
+
+int main(int argc, char *argv[])
+{
+    tstsettags(argc,argv);
+    tstrun() {
+      tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
+         // Only if NoDB is enabled and SimpleRun is disabled.
+      }
+    }
+}
+
+```
+```bash
+  $ my_tests ?
+  ./test/t_tst01 [? | [+/-]tag ...]
+  tags: NoDB FileOnly SimpleRun
+
+  $ my_tests -* +FileOnly
+  FILE ▷ t_tst01.c 
+  SKIP├┬ tsttag(NoDB) && !tsttag(SimpleRun) » t_tst01.c:9
+    │╰ 
+  RSLT ▷ 0 KO | 0 OK | 1 SKIP
+```    
 ### Benefits:
 
 Tagging and grouping tests offer the flexibility to narrow down the testing focus, which can lead to quicker debugging and development cycles. This feature is especially advantageous in large projects with numerous test cases or in continuous integration environments where only a subset of tests might be relevant to run in certain scenarios.
@@ -269,35 +299,7 @@ To ensure that the `makefile` correctly identifies unit test files:
 
   The `makefile` will automatically detect all C files prefixed with `t_`, compile them, and execute each test.
 
-### Full example:
 
-```c
-#include "tst.h"
-
-tsttags(NoDB, FileOnly, SimpleRun);
-
-int main(int argc, char *argv[])
-{
-    tstsettags(argc,argv);
-    tstrun() {
-      tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
-         // Only if NoDB is enabled and SimpleRun is disabled.
-      }
-    }
-}
-
-```
-```bash
-  $ my_tests ?
-  ./test/t_tst01 [? | [+/-]tag ...]
-  tags: NoDB FileOnly SimpleRun
-
-  $ my_tests -* +FileOnly
-  FILE ▷ t_tst01.c 
-  SKIP├┬ tsttag(NoDB) && !tsttag(SimpleRun) » t_tst01.c:9
-    │╰ 
-  RSLT ▷ 0 KO | 0 OK | 1 SKIP
-```
 
 ### Benefits
 
