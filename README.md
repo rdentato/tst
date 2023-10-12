@@ -267,7 +267,7 @@ mkdir test
 - **`makefile`**: The provided `makefile` will contain rules to compile and run your unit tests. Ensure this is also placed within the `test` directory.
 
 ```bash
-cp path_to_tst_files/tst.h path_to_project/test/
+cp path_to_tst_files/src/tst.h path_to_project/test/
 cp path_to_tst_files/test/makefile path_to_project/test/
 ```
 
