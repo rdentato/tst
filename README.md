@@ -269,6 +269,36 @@ To ensure that the `makefile` correctly identifies unit test files:
 
   The `makefile` will automatically detect all C files prefixed with `t_`, compile them, and execute each test.
 
+### Full example:
+
+```c
+#include "tst.h"
+
+tsttags(NoDB, FileOnly, SimpleRun);
+
+int main(int argc, char *argv[])
+{
+    tstsettags(argc,argv);
+    tstrun() {
+      tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
+         // Only if NoDB is enabled and SimpleRun is disabled.
+      }
+    }
+}
+
+```
+```bash
+  $ my_tests ?
+  ./test/t_tst01 [? | [+/-]tag ...]
+  tags: NoDB FileOnly SimpleRun
+
+  $ my_tests -* +FileOnly
+  FILE ▷ t_tst01.c 
+  SKIP├┬ tsttag(NoDB) && !tsttag(SimpleRun) » t_tst01.c:9
+    │╰ 
+  RSLT ▷ 0 KO | 0 OK | 1 SKIP
+```
+
 ### Benefits
 
 By setting up a dedicated `test` directory and leveraging the provided `makefile`, you can effortlessly manage and run unit tests using the `tst` framework. This structure not only ensures a clean project layout but also streamlines the testing process, making it easier for developers to maintain and expand upon their test suites.
