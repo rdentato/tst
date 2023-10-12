@@ -49,13 +49,13 @@ If you want to use `tst`, just include `tst.h` and you're ready to write your te
      }
      ```
    
-6. **tstclk( ... )**
+6. **tstclock( ... )**
    - **Purpose**: Measures and displays elapsed time for specified instructions.
    - **Example**:
      ```c
-     tstclk({
+     tstclock("Measuring time") {
        // Code block to measure...
-     });
+     }
      ```
    
 7. **tstdata( ... )**
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     }
     
     tstcase("Time Complexity Analysis") {
-      tstclk("Check counting time") {
+      tstclock("Check counting time") {
         volatile int b = 1;
         // Code to analyze...
         for (int a = 1; a < 100 ; a++) b = a + b;
@@ -145,6 +145,9 @@ DATA│ △△△
 NOTE 🗎 Testing Complete. Review for any FAIL flags. » tst_test.c:41
 RSLT ▷ 1 KO | 3 OK | 1 SKIP
 ```
+## Temporary disabling
+There are cases where you want to If you want to switch off a test case, a check, a group, and so on
+
 ## Conclusion
 `tst` offers a user-friendly syntax to facilitate streamlined testing without exhaustive setup or dependencies. Developers may swiftly integrate, run, and diagnose tests, ensuring the robustness and reliability of their C code.
 
