@@ -32,28 +32,28 @@ static char *tst_tag_str = "";
 #define tsttags(...)          tst_vrg(tst_tags_,__VA_ARGS__)
 #define tst_tags_1(_1) \
    static int tsttag_##_1=1; \
-   static void tstsettags(int argc, char *argv[]) { \
+   static inline void tstsettags(int argc, char *argv[]) { \
      tst_set_tags(argc,argv,&tsttag_##_1,#_1,&tst_tag,tst_tag_str,&tst_tag,tst_tag_str,&tst_tag,tst_tag_str); \
    }
 
 #define tst_tags_2(_1,_2) \
    static int tsttag_##_1=1; static int tsttag_##_2=1; \
-   static void tstsettags(int argc, char *argv[]) { \
+   static inline void tstsettags(int argc, char *argv[]) { \
      tst_set_tags(argc,argv,&tsttag_##_1,#_1,&tsttag_##_2,#_2,&tst_tag,tst_tag_str,&tst_tag,tst_tag_str); \
    }
 
 #define tst_tags_3(_1,_2,_3) \
    static int tsttag_##_1=1; static int tsttag_##_2=1; static int tsttag_##_3=1; \
-   static void tstsettags(int argc, char *argv[]) { \
+   static inline void tstsettags(int argc, char *argv[]) { \
      tst_set_tags(argc,argv,&tsttag_##_1,#_1,&tsttag_##_2,#_2,&tsttag_##_3,#_3,&tst_tag,tst_tag_str); \
    }
 
 #define tst_tags_4(_1,_2,_3,_4) \
    static int tsttag_##_1=1; static int tsttag_##_2=1; static int tsttag_##_3=1; static int tsttag_##_4=1; \
-   static void tstsettags(int argc, char *argv[]) { \
+   static inline void tstsettags(int argc, char *argv[]) { \
    tst_set_tags(argc,argv,&tsttag_##_1,#_1,&tsttag_##_2,#_2,&tsttag_##_3,#_3,&tsttag_##_4,#_4);}
 
-static void tst_set_tags(int argc, char *argv[],int *_1,char *_1_str,int *_2,char *_2_str,int *_3,char *_3_str,int *_4,char *_4_str) {
+static inline void tst_set_tags(int argc, char *argv[],int *_1,char *_1_str,int *_2,char *_2_str,int *_3,char *_3_str,int *_4,char *_4_str) {
   int v=1; char *arg;
   for (int n=1; n<argc; n++) {
     arg = argv[n]; v = 1;
