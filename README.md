@@ -1,5 +1,5 @@
 # tst
-A minimalistic unit test framework for C.
+A minimalistic unit test framework for C (and C++).
 
 ## Introduction
 `tst` is a lightweight unit testing framework designed for C programs. It provides a suite of functionalities to define, group, and validate test cases, while offering utilities for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fosters easy test integration into C projects.
@@ -236,7 +236,7 @@ When executing your tests from the command line, you can enable or disable speci
     my_tests ?
     ```
 If you are using the `makefile` provided in the `test` directory (which I reccomend to look at), you can drive the 
-execution of groups of text via the `TSTTAGS` environment variable. For example to exclude the group `NODB`:
+execution of groups of tests via the `TSTTAGS` environment variable. For example to exclude the group `NODB`:
 
   ```
     /prj $ TSTTAGS=-NODB make -B runtest
