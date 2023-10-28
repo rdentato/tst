@@ -1,4 +1,4 @@
-![tst_logo](https://github.com/rdentato/tst/assets/48629/248f5856-13bd-4e35-8d9f-0b74a0ecb010)
+<img height="150" src="https://github.com/rdentato/tst/assets/48629/248f5856-13bd-4e35-8d9f-0b74a0ecb010"> <br/>
 # tst
 A minimalistic unit test framework for C (and C++). (Join us on [Discord](https://discord.gg/BqsZjDaUxg)!)
 
