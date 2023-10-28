@@ -8,10 +8,8 @@ void myData(FILE *f)
   fprintf(f,"\nMYDATA MYDATA MYDATA MYDATA MYDATA\n   MYDATA MYDATA MYDATA MYDATA \n");
 }
 
-int main(int argc, char *argv[])
+tstrun("Primary Test Suite")
 {
-  tstrun("Primary Test Suite") {
-    
     tstcase("Equality Checks %d, %d", 1, 1) {
       tstcheck(1 == 1, "Mismatch: %d != %d", 1, 1);
       tstcheck(1 != 1, "Failed on purpose");
@@ -42,5 +40,4 @@ int main(int argc, char *argv[])
     }
     
     tstnote("Testing Complete. Review for any FAIL flags. (One is expected)");
-  }
 }

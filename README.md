@@ -8,11 +8,11 @@ I never understood why some of the most common unit test frameworks had so many 
 If you want to use `tst`, just include `tst.h` and you're ready to write your test cases.
 
 ## Core Functions Overview
-1. **tstrun( ... )**
-   - **Purpose**: Groups test cases and outputs the title.
+1. **tstrun(title, ... )**
+   - **Purpose**: Groups test cases, outputs the title and defines the group tags.
    - **Example**:
      ```c
-     tstrun("Running all tests") {
+     tstrun("Running tests", noDB, simple) {
        // Your test cases here...
      }
      ```
@@ -81,9 +81,8 @@ void myData(FILE *f)
   fprintf(f,"\nMYDATA MYDATA MYDATA MYDATA MYDATA\n MYDATA MYDATA MYDATA MYDATA \n");
 }
 
-int main(int argc, char *argv[])
+tstrun("Primary Test Suite")
 {
-  tstrun("Primary Test Suite") {
     
     tstcase("Equality Checks %d, %d", 1, 1) {
       tstcheck(1 == 1, "Mismatch: %d != %d", 1, 1);
@@ -115,12 +114,11 @@ int main(int argc, char *argv[])
     }
     
     tstnote("Testing Complete. Review for any FAIL flags.");
-  }
 }
 ```
 ## Test Results:
 ```
-FILE ▷ tst_test.c Primary Test Suite
+FILE ▷ tst_test.c "Primary Test Suite"
 CASE┬── Equality Checks 1, 1 » tst_test.c:12
 PASS│  1 == 1 » tst_test.c:13
 FAIL├┬ 1 != 1 » tst_test.c:14
@@ -167,6 +165,8 @@ Similarly:
    tst_check(x==0,"Not zero! %d", x);   // Check disabled
 ```
 
+You can also disable an entire test scenario changing `tstrun` into `tst_run()`.
+
 This can be useful when you have test cases that you might no longer need to be executed all the time but still want to keep them in the test suite because they can be useful at a later stage (and you are against using too many `#ifdef` :) )
 
 
@@ -177,21 +177,18 @@ In the `tst` framework, the ability to tag and group tests is a powerful feature
 ### How to Tag and Group Tests:
 
 1. **Defining Tags**: 
-   - Use the `tsttags` macro at the beginning of your test file to define all the tags you plan to use.
+   - Add the tags to the `tstrun` function at the beginning of your test file to define all the tags you plan to use.
    - **Example**:
      ```c
-     tsttags(Group1, Group2, Group3)
+     tstrun("Title", Group1, Group2, Group3)
      ```
-
-2. **Enabling Command-Line Argument Parsing**:
-   - In your `main` function, use `tstsettags(argc, argv);`. This line parses command-line arguments to determine which tags are enabled or disabled.
    
-3. **Grouping Tests Using Tags**:
+2. **Grouping Tests Using Tags**:
    - Within `tstrun()`, use the `tstgroup` function in combination with the `tsttag` function to conditionally run specific blocks of tests based on the tags that are active.
    - `tsttag(TagName)` returns a boolean value indicating whether a specific tag is active.
    - **Examples**:
      ```c
-     tstrun() {
+     tstrun("Title", Group1, Group2, Group3) {
        tstgroup(tsttag(Group2) || tsttag(Group3)) {
          // This block will run only if either Group2 or Group3 is enabled.
        }
@@ -239,7 +236,7 @@ If you are using the `makefile` provided in the `test` directory (which I reccom
 execution of groups of tests via the `TSTTAGS` environment variable. For example to exclude the group `NODB`:
 
   ```
-    /prj $ TSTTAGS=-NODB make -B runtest
+    $ TSTTAGS=-NODB make -B runtest
   ```
 
 
@@ -248,19 +245,13 @@ execution of groups of tests via the `TSTTAGS` environment variable. For example
 ```c
 #include "tst.h"
 
-tsttags(NoDB, FileOnly, SimpleRun);
-
-int main(int argc, char *argv[])
-{
-    tstsettags(argc,argv);
-    tstrun() {
-      tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
-         // Only if NoDB is enabled and SimpleRun is disabled.
-      }
-    }
+tstrun("Grouped tests",NoDB, FileOnly, SimpleRun) {
+  tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
+     // Only if NoDB is enabled and SimpleRun is disabled.
+  }
 }
-
 ```
+
 ```bash
   $ my_tests ?
   ./test/t_tst01 [? | [+/-]tag ...]

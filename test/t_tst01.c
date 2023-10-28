@@ -3,14 +3,9 @@
 
 #include "tst.h"
 
-tsttags(NoDB, FileOnly, SimpleRun);
-
-int main(int argc, char *argv[])
+tstrun("Switching groups on and off",NoDB, FileOnly, SimpleRun)
 {
-    tstsettags(argc,argv);
-    tstrun() {
-      tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
-         // Only if NoDB is enabled and SimpleRun is disabled.
-      }
-    }
+  tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
+     // Only if NoDB is enabled and SimpleRun is disabled.
+  }
 }
