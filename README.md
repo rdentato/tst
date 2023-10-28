@@ -160,6 +160,13 @@ we can leave it out this way (has an underscore after `tst`):
 
    }
 ```
+
+Similarly:
+```
+   tstcheck(x<0,"Too small! %d", x);    // Check enabled
+   tst_check(x==0,"Not zero! %d", x);   // Check disabled
+```
+
 This can be useful when you have test cases that you might no longer need to be executed all the time but still want to keep them in the test suite because they can be useful at a later stage (and you are against using too many `#ifdef` :) )
 
 
