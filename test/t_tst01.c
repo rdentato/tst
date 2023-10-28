@@ -1,3 +1,6 @@
+//  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
+//  SPDX-License-Identifier: MIT
+
 #include "tst.h"
 
 tsttags(NoDB, FileOnly, SimpleRun);

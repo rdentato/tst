@@ -4,6 +4,10 @@
 #ifndef TST_VERSION // 0.1.1-beta
 #define TST_VERSION    0x0001001B
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -128,5 +132,9 @@ static inline int tstpassed(char *s) {return  tst_result;}
 #define tst_case(...)  if (!tst_zero) ; else
 #define tst_group(...) if (!tst_zero) ; else
 #define tst_clock(...) if ( tst_zero) ; else
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // TST_VERSION

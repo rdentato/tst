@@ -1,3 +1,6 @@
+//  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
+//  SPDX-License-Identifier: MIT
+
 #include "tst.h"  // Ensure the tst framework is included
 
 void myData(FILE *f)
@@ -38,6 +41,6 @@ int main(int argc, char *argv[])
       myData(stderr);
     }
     
-    tstnote("Testing Complete. Review for any FAIL flags.");
+    tstnote("Testing Complete. Review for any FAIL flags. (One is expected)");
   }
 }

@@ -1,4 +1,4 @@
-#  SPDX-Creator-Person: Remo Dentato (rdentato@gmail.com)
+#  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 #  SPDX-License-Identifier: MIT
 
 _EXE=.exe
@@ -9,14 +9,22 @@ _EXE=
 STATIC=
 endif
 
-CFLAGS=-O2 -Wall -I../src $(STATIC) -DDEBUG
+CXX_AVAILABLE := $(shell $(CXX) --version 2>/dev/null)
+
+CFLAGS=-O2 -Wall -I../src -I. $(STATIC) -DDEBUG
 LIBS=
 
-TESTS_SRC=$(wildcard t_*.c)
-TESTS=$(TESTS_SRC:.c=)
+TESTS_SRC_C=$(wildcard t_*.c)
+TESTS_C=$(TESTS_SRC_C:.c=)
 
-# implicit rules
-MAKEFLAGS += --no-builtin-rules
+ifneq ($(CXX_AVAILABLE),)
+  TESTS_SRC_CPP=$(wildcard t_*.cpp)
+  TESTS_CPP=$(TESTS_SRC_CPP:.cpp=)
+	CXXFLAGS=$(CFLAGS)
+endif
+
+TESTS_SRC=$(TST_SRC_C) $(TST_SRC_CPP)
+TESTS=$(TESTS_C) $(TESTS_CPP)
 
 # targets
 all: $(TESTS)
@@ -31,12 +39,6 @@ runtest: all
 	@echo    "SKIP: `grep '^SKIP' test.log | wc -l`"
 	@echo "EXPECTED 1 FAIL HERE △"
 
-
-#%.o: %.c 
-#	$(CC) $(CFLAGS) -c $< -o $@
-
-%: %.c 
-	$(CC) $(CFLAGS) $< -o $* $(LIBS)
 
 #.PRECIOUS: %.o
 
