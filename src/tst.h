@@ -1,9 +1,9 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.2.0 release candidate
+//  SPDX-PackageVersion: 0.3.0 final
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0002000C
+#define TST_VERSION 0x0003000F
 
 #ifdef __cplusplus
 extern "C" {
