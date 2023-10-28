@@ -213,6 +213,13 @@ When executing your tests from the command line, you can enable or disable speci
     ```
     my_tests ?
     ```
+If you are using the `makefile` provided in the `test` directory (which I reccomend to look at), you can drive the 
+execution of groups of text via the `TSTTAGS` environment variable. For example to exclude the group `NODB`:
+
+  ```
+    /prj $ TSTTAGS=-NODB make -B runtest
+  ```
+
 
 ### Full example:
 
