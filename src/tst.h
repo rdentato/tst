@@ -23,23 +23,24 @@ static int tst_fail = 0;
 static int tst_skip = 0;
 static int tst_case = 0;
 static int tst_result = 0;
+static const char* tst_title;
 
 #define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
-#define tst__argn(...)  tst__cnt(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9)
+#define tst__argn(...)  tst__cnt(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #define tst__cat2(x,y)  x ## y
 #define tst__cat(x,y)   tst__cat2(x,y)
 #define tst_vrg(tst__f,...) tst__cat(tst__f, tst__argn(__VA_ARGS__))(__VA_ARGS__)
 
 #define tst_tags(...) tst_vrg(tst_tags_,__VA_ARGS__)
-#define tst_tags_0(_0)                         tst_tags__(0,_1,_2,_3,_4,_5,_6,_7,_8)  
-#define tst_tags_1(_0,_1)                      tst_tags__(1,_1,_2,_3,_4,_5,_6,_7,_8)
-#define tst_tags_2(_0,_1,_2)                   tst_tags__(2,_1,_2,_3,_4,_5,_6,_7,_8)
-#define tst_tags_3(_0,_1,_2,_3)                tst_tags__(3,_1,_2,_3,_4,_5,_6,_7,_8)
-#define tst_tags_4(_0,_1,_2,_3,_4)             tst_tags__(4,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_5(_0,_1,_2,_3,_4,_5)          tst_tags__(5,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_6(_0,_1,_2,_3,_4,_5,_6)       tst_tags__(6,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_7(_0,_1,_2,_3,_4,_5,_6,_7)    tst_tags__(7,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_8(_0,_1,_2,_3,_4,_5,_6,_7,_8) tst_tags__(8,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_1(_0)                         tst_tags__(0,_1,_2,_3,_4,_5,_6,_7,_8)  
+#define tst_tags_2(_0,_1)                      tst_tags__(1,_1,_2,_3,_4,_5,_6,_7,_8)
+#define tst_tags_3(_0,_1,_2)                   tst_tags__(2,_1,_2,_3,_4,_5,_6,_7,_8)
+#define tst_tags_4(_0,_1,_2,_3)                tst_tags__(3,_1,_2,_3,_4,_5,_6,_7,_8)
+#define tst_tags_5(_0,_1,_2,_3,_4)             tst_tags__(4,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_6(_0,_1,_2,_3,_4,_5)          tst_tags__(5,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_7(_0,_1,_2,_3,_4,_5,_6)       tst_tags__(6,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_8(_0,_1,_2,_3,_4,_5,_6,_7)    tst_tags__(7,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_9(_0,_1,_2,_3,_4,_5,_6,_7,_8) tst_tags__(8,_1,_2,_3,_4,_5,_6,_7,_8) 
 
 #define tsttag(t_) tst_tag_ ## t_
 
@@ -49,16 +50,17 @@ static int tst_result = 0;
    static int  *tst_tag_states[8] = {&tst_tag_##_1,&tst_tag_##_2,&tst_tag_##_3,&tst_tag_##_4, \
                                      &tst_tag_##_5,&tst_tag_##_6,&tst_tag_##_7,&tst_tag_##_8}; \
    static const char *tst_tag_names[8]  = {#_1,#_2,#_3,#_4,#_5,#_6,#_7,#_8}; \
-   static inline void tst_parsetags(int argc, const char **argv) {tst_set_tags(argc,argv, n_, tst_tag_states, tst_tag_names);}
+   static inline void tst_parsetags(int argc, const char **argv) {tst_parse_tags(argc,argv, n_, tst_tag_states, tst_tag_names);}
 
 static inline void tst_parsetags(int argc, const char **argv);
 
-static inline void tst_set_tags(int argc, const char **argv, int ntags, int*states[], const char **names) {
+static inline void tst_parse_tags(int argc, const char **argv, int ntags, int*states[], const char **names) {
   int v=1; const char *arg;
+  if (names[0][0] == '\0') ntags=0;
   for (int n=1; n<argc; n++) {
     arg = argv[n];
     if (*arg == '?') {
-      fprintf(stderr,"%s [? | [+/-]tag ...]\ntags: ",argv[0]);
+      fprintf(stderr,"Test Scenario: \"%s\"\n%s %s",tst_title, argv[0], ntags>0? "[? | [+/-]tag ...]\ntags: " : "[?]");
       for (int k=0; k<ntags; k++) fprintf(stderr,"%s ",names[k]);
       fputc('\n',stderr);
       exit(1);
@@ -116,8 +118,9 @@ static inline int tstpassed(char *s) {return  tst_result;}
 #define tstrun_(tst_, title_,...) \
   tst_tags(0,__VA_ARGS__); void tst__run(int n); \
   int main(int argc, const char **argv) { \
+    tst_title = title_; \
     tst_parsetags(argc,argv); \
-    fprintf(stderr,"FILE ▷ %s \"%s%s\"\n", tst_filename((char *)__FILE__), title_, (tst_?"":" (disabled)"));\
+    fprintf(stderr,"FILE ▷ %s \"%s%s\"\n", tst_filename((char *)__FILE__), tst_title, (tst_?"":" (disabled)"));\
     if (tst_) tst__run(tst_usestatic); \
     fprintf(stderr,"RSLT ▷ %d KO | %d OK | %d SKIP\n", tst_fail, tst_pass, tst_skip);\
     return (tst_fail > 0); \
