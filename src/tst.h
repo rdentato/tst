@@ -25,8 +25,8 @@ static int tst_result = 0;
 
 #define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_N, ...) _N
 #define tst__argn(...)  tst__cnt(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-#define tst__cat0(x,y)  x ## y
-#define tst__cat(x,y)   tst__cat0(x,y)
+#define tst__cat2(x,y)  x ## y
+#define tst__cat(x,y)   tst__cat2(x,y)
 
 #define tst_vrg(tst__f,...) tst__cat(tst__f, tst__argn(__VA_ARGS__))(__VA_ARGS__)
 
@@ -72,10 +72,11 @@ static inline void tst_set_tags(int argc, char *argv[], int ntags, int*states[],
 #ifdef TSTFULLPATH
   #define tst_filename(f) f
 #else
-  static inline char *tst_filename(char *fname) 
-  {  char *s;
-     if ((s = strrchr(fname,'/')) || (s = strrchr(fname, '\\'))) return s+1;
-     return fname;
+  static inline char *tst_filename(const char *fname) 
+  {  char *ret = (char *)fname;
+     char *s ;
+     if ((s = strrchr(ret,'/')) || (s = strrchr(ret, '\\'))) ret = s+1;
+     return ret;
   }
 #endif
 
