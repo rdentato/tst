@@ -360,6 +360,15 @@ or compiler's options:
   gcc -DTSTFULLPATH -o test/t_tst00 test/t_tst00.c
 ```
 
+## Split tests
+Usually the `tstcheck()` function is enough to handle the test results but there might be cases when you want to perform some more actions depending on the fact that the test passed or not.
+
+For this there are three functions:
+
+- `tst()` Just perform the test.
+- `tstpassed()` Returns true if the previous test check (with `tst()` or `tstcheck()`) passed.
+- `tstfailed()` Returns true if the previous test check (with `tst()` or `tstcheck()`) failed.
+
 ## Conclusion
 `tst` offers a user-friendly syntax to facilitate streamlined testing without exhaustive setup or dependencies. Developers may swiftly integrate, run, and diagnose tests, ensuring the robustness and reliability of their C code.
 
