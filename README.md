@@ -146,7 +146,7 @@ NOTE 🗎 Testing Complete. Review for any FAIL flags. » tst_test.c:41
 RSLT ▷ 1 KO | 3 OK | 1 SKIP
 ```
 ## Temporary disabling
-There are cases where you want to If you want to switch off a test case, a check, a group, and so on. For cases like these, you just add an underscore after `tst`. 
+There are cases when you want to switch off a test case, a check, a group, and so on. For cases like these, you just add an underscore after `tst`. 
 For example if we have this test case:
 ```
    tstcase ("Check for 0") {
