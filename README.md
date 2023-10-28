@@ -146,7 +146,22 @@ NOTE 🗎 Testing Complete. Review for any FAIL flags. » tst_test.c:41
 RSLT ▷ 1 KO | 3 OK | 1 SKIP
 ```
 ## Temporary disabling
-There are cases where you want to If you want to switch off a test case, a check, a group, and so on
+There are cases where you want to If you want to switch off a test case, a check, a group, and so on. For cases like these, you just add an underscore after `tst`. 
+For example if we have this test case:
+```
+   tstcase ("Ceck for 0") {
+
+   }
+
+```
+we can leave it out this way (has an underscore after `tst`):
+```
+   tst_case ("Ceck for 0") {
+
+   }
+```
+This can be useful when you have test cases that you might no longer need to be executed all the time but still want to keep them in the test suite because they can be useful at a later stage (and you are against using too many `#ifdef` :) )
+
 
 ## Tagging and Grouping in `tst`: Selective Test Execution
 
