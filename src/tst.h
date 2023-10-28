@@ -25,22 +25,21 @@ static int tst_case = 0;
 static int tst_result = 0;
 
 #define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
-#define tst__argn(...)  tst__cnt(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define tst__argn(...)  tst__cnt(__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0, 9)
 #define tst__cat2(x,y)  x ## y
 #define tst__cat(x,y)   tst__cat2(x,y)
-
 #define tst_vrg(tst__f,...) tst__cat(tst__f, tst__argn(__VA_ARGS__))(__VA_ARGS__)
 
 #define tst_tags(...) tst_vrg(tst_tags_,__VA_ARGS__)
-#define tst_tags_1(_0)                         tst_tags__(0,_1,_2,_3,_4,_5,_6,_7,_8)  
-#define tst_tags_2(_0,_1)                      tst_tags__(1,_1,_2,_3,_4,_5,_6,_7,_8)
-#define tst_tags_3(_0,_1,_2)                   tst_tags__(2,_1,_2,_3,_4,_5,_6,_7,_8)
-#define tst_tags_4(_0,_1,_2,_3)                tst_tags__(3,_1,_2,_3,_4,_5,_6,_7,_8)
-#define tst_tags_5(_0,_1,_2,_3,_4)             tst_tags__(4,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_6(_0,_1,_2,_3,_4,_5)          tst_tags__(5,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_7(_0,_1,_2,_3,_4,_5,_6)       tst_tags__(6,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_8(_0,_1,_2,_3,_4,_5,_6,_7)    tst_tags__(7,_1,_2,_3,_4,_5,_6,_7,_8) 
-#define tst_tags_9(_0,_1,_2,_3,_4,_5,_6,_7,_8) tst_tags__(8,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_0(_0)                         tst_tags__(0,_1,_2,_3,_4,_5,_6,_7,_8)  
+#define tst_tags_1(_0,_1)                      tst_tags__(1,_1,_2,_3,_4,_5,_6,_7,_8)
+#define tst_tags_2(_0,_1,_2)                   tst_tags__(2,_1,_2,_3,_4,_5,_6,_7,_8)
+#define tst_tags_3(_0,_1,_2,_3)                tst_tags__(3,_1,_2,_3,_4,_5,_6,_7,_8)
+#define tst_tags_4(_0,_1,_2,_3,_4)             tst_tags__(4,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_5(_0,_1,_2,_3,_4,_5)          tst_tags__(5,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_6(_0,_1,_2,_3,_4,_5,_6)       tst_tags__(6,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_7(_0,_1,_2,_3,_4,_5,_6,_7)    tst_tags__(7,_1,_2,_3,_4,_5,_6,_7,_8) 
+#define tst_tags_8(_0,_1,_2,_3,_4,_5,_6,_7,_8) tst_tags__(8,_1,_2,_3,_4,_5,_6,_7,_8) 
 
 #define tsttag(t_) tst_tag_ ## t_
 
@@ -91,6 +90,7 @@ static inline void tst_set_tags(int argc, const char **argv, int ntags, int*stat
 static inline int tstfailed(char *s) {return !tst_result;}
 static inline int tstpassed(char *s) {return  tst_result;}
 
+// This is only used to avoid that the compiler could complain about unused static variables.
 #define tst_usestatic (tst_result | tst_case | tst_case_pass | tst_case_fail | tst_case_skip)
 
 #define tst_init_case() (tst_case_pass=tst_case_fail=tst_case_skip=0)
