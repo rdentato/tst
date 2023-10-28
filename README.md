@@ -334,6 +334,32 @@ To ensure that the `makefile` correctly identifies unit test files:
 
 By setting up a dedicated `test` directory and leveraging the provided `makefile`, you can effortlessly manage and run unit tests using the `tst` framework. This structure not only ensures a clean project layout but also streamlines the testing process, making it easier for developers to maintain and expand upon their test suites.
 
+## Filename path
+By default only the source file name is printed in the log. For example:
+
+```
+PASS│  1 == 1 » t_tst00.c:16
+```
+
+If you want, instead, to have the full path printed, like in:
+```
+PASS│  1 == 1 » test/t_tst00.c:16
+```
+
+ you can define the `TSTFULLPATH` symbol before including `tst.h`:
+```c
+  #define TSTFULLPATH
+  #include "tst.h"
+```
+or using `make`'s options:
+```bash
+  make TSTFULLPATH=1 test/t_tst00
+```
+or compiler's options:
+```bash
+  gcc -DTSTFULLPATH -o test/t_tst00 test/t_tst00.c
+```
+
 ## Conclusion
 `tst` offers a user-friendly syntax to facilitate streamlined testing without exhaustive setup or dependencies. Developers may swiftly integrate, run, and diagnose tests, ensuring the robustness and reliability of their C code.
 

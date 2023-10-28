@@ -69,6 +69,16 @@ static inline void tst_set_tags(int argc, char *argv[], int ntags, int*states[],
   }
 }
 
+#ifdef TSTFULLPATH
+  #define tst_filename(f) f
+#else
+  static inline char *tst_filename(char *fname) 
+  {  char *s;
+     if ((s = strrchr(fname,'/')) || (s = strrchr(fname, '\\'))) return s+1;
+     return fname;
+  }
+#endif
+
 #define tst(x) (tst_result = !!(x))
 
 static inline int tstfailed(char *s) {return !tst_result;}
@@ -82,7 +92,7 @@ static inline int tstpassed(char *s) {return  tst_result;}
 #define tst_init_run()  (tst_pass=tst_fail=tst_skip=tst_init_case())
 
 #define tst_prtf(...) \
-   (fprintf(stderr, __VA_ARGS__), fprintf(stderr, " » %s:%d\n", __FILE__, __LINE__), tst_zero=0)
+   (fprintf(stderr, __VA_ARGS__), fprintf(stderr, " » %s:%d\n", tst_filename(__FILE__), __LINE__), tst_zero=0)
 
 #define tstcheck(tst_,...)  \
    do { tst(tst_); \
@@ -100,7 +110,7 @@ static inline int tstpassed(char *s) {return  tst_result;}
    } while(0)
 
 #define tstrun(...) \
-   for (int tst = !(fputs ("FILE ▷ " __FILE__, stderr), fprintf(stderr," " __VA_ARGS__ ), fputc('\n',stderr), tst_init_run()); \
+   for (int tst = !(fprintf(stderr,"FILE ▷ %s", tst_filename(__FILE__)), fprintf(stderr," " __VA_ARGS__ ), fputc('\n',stderr), tst_init_run()); \
         tst && tst_usestatic; \
         tst = 0, fprintf(stderr,"RSLT ▷ %d KO | %d OK | %d SKIP\n", tst_fail, tst_pass, tst_skip))
 
