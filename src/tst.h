@@ -1,9 +1,9 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.3.0 final
+//  SPDX-PackageVersion: 0.3.1 final
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0003000F
+#define TST_VERSION 0x0003001F
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,8 +89,8 @@ static inline void tst_parse_tags(int argc, const char **argv, int ntags, int*st
 
 #define tst(x) (tst_result = !!(x))
 
-static inline int tstfailed(char *s) {return !tst_result;}
-static inline int tstpassed(char *s) {return  tst_result;}
+static inline int tstfailed() {return !tst_result;}
+static inline int tstpassed() {return  tst_result;}
 
 // This is only used to avoid that the compiler could complain about unused static variables.
 #define tst_usestatic (tst_result | tst_case | tst_case_pass | tst_case_fail | tst_case_skip)
