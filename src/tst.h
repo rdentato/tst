@@ -1,9 +1,9 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.3.0 final
+//  SPDX-PackageVersion: 0.4.0-beta
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0003000F
+#define TST_VERSION 0x0004000B
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,15 +14,15 @@ extern "C" {
 #include <time.h>
 #include <string.h>
 
-static volatile int tst_zero = 0;
-static int tst_case_pass = 0;
-static int tst_case_fail = 0;
-static int tst_case_skip = 0;
-static int tst_pass = 0;
+static volatile short tst_zero = 0;
+static unsigned short tst_case_pass = 0; // A test case can't have more than 65535 checks!
+static unsigned short tst_case_fail = 0;
+static unsigned short tst_case_skip = 0;
+static int tst_pass = 0; // A test run can have up to 2 Billions checks!
 static int tst_fail = 0;
 static int tst_skip = 0;
-static int tst_case = 0;
-static int tst_result = 0;
+static short tst_case = 0;
+static short tst_result = 0;
 static const char* tst_title;
 
 #define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
@@ -42,38 +42,47 @@ static const char* tst_title;
 #define tst_tags_8(_0,_1,_2,_3,_4,_5,_6,_7)    tst_tags__(7,_1,_2,_3,_4,_5,_6,_7,_8) 
 #define tst_tags_9(_0,_1,_2,_3,_4,_5,_6,_7,_8) tst_tags__(8,_1,_2,_3,_4,_5,_6,_7,_8) 
 
-#define tsttag(t_) tst_tag_ ## t_
+static unsigned char tst_tags_val = 0xFF;
+
+#define tsttag(t_) (!!((tst_tag_ ## t_) & tst_tags_val))
 
 #define tst_tags__(n_,_1,_2,_3,_4,_5,_6,_7,_8) \
-   static int tst_tag_##_1=1; static int tst_tag_##_2=1; static int tst_tag_##_3=1; static int tst_tag_##_4=1; \
-   static int tst_tag_##_5=1; static int tst_tag_##_6=1; static int tst_tag_##_7=1; static int tst_tag_##_8=1; \
-   static int  *tst_tag_states[8] = {&tst_tag_##_1,&tst_tag_##_2,&tst_tag_##_3,&tst_tag_##_4, \
-                                     &tst_tag_##_5,&tst_tag_##_6,&tst_tag_##_7,&tst_tag_##_8}; \
-   static const char *tst_tag_names[8]  = {#_1,#_2,#_3,#_4,#_5,#_6,#_7,#_8}; \
-   static inline void tst_parsetags(int argc, const char **argv) {tst_parse_tags(argc,argv, n_, tst_tag_states, tst_tag_names);}
+   static unsigned char tst_tag_##_1=0x01; static unsigned char tst_tag_##_2=0x02; \
+   static unsigned char tst_tag_##_3=0x04; static unsigned char tst_tag_##_4=0x08; \
+   static unsigned char tst_tag_##_5=0x10; static unsigned char tst_tag_##_6=0x20; \
+   static unsigned char tst_tag_##_7=0x40; static unsigned char tst_tag_##_8=0x80; \
+   static const char *tst_tag_names[8] = {#_1,#_2,#_3,#_4,#_5,#_6,#_7,#_8}; \
+   static inline void tst_parsetags(int argc, const char **argv) {tst_parse_tags(argc,argv, n_, tst_tag_names);}\
+   static inline int tst_tags_zero() { return tst_zero & (tst_tag_##_1 | tst_tag_##_2 | tst_tag_##_3| tst_tag_##_4| \
+                                                          tst_tag_##_5 | tst_tag_##_6 | tst_tag_##_7| tst_tag_##_8); }
 
-static inline void tst_parsetags(int argc, const char **argv);
+static inline int tst_tags_zero(); // tst_tags_zero() always returns 0 and is used just to avoid compiler warnings.
 
-static inline void tst_parse_tags(int argc, const char **argv, int ntags, int*states[], const char **names) {
-  int v=1; const char *arg;
-  if (names[0][0] == '\0') ntags=0;
+static inline void tst_parse_tags(int argc, const char **argv, int ntags, const char **names) {
+  unsigned char v=1; const char *arg;
+  if (names[0][0] == '\0') ntags=tst_tags_zero(); 
+  if (argc > 1 && argv[1][0] == '?') {
+    fprintf(stderr,"Test Scenario: \"%s\"\n%s %s",tst_title, argv[0], ntags>0? "[? | [+/-]tag ...]\ntags: " : "[?]");
+    for (int k=0; k<ntags; k++) fprintf(stderr,"%s ",names[k]);
+    fputc('\n',stderr);
+    exit(1);
+  }
+  if (ntags == 0) return;
   for (int n=1; n<argc; n++) {
     arg = argv[n];
-    if (*arg == '?') {
-      fprintf(stderr,"Test Scenario: \"%s\"\n%s %s",tst_title, argv[0], ntags>0? "[? | [+/-]tag ...]\ntags: " : "[?]");
-      for (int k=0; k<ntags; k++) fprintf(stderr,"%s ",names[k]);
-      fputc('\n',stderr);
-      exit(1);
-    }
-    v = 1;
-    if (*arg == '-') {v=0; arg++;}
+    v = 0xFF;
+    if (*arg == '-') {arg++; v=0x00;}
     if (*arg == '+') {arg++;}
-    if (*arg == '\0') /* DO NOTHING */ ;
-    else if (*arg == '*') {
-      for (int k=0; k<ntags; k++) *(states[k])=v; 
+    
+    if (*arg == '*') {tst_tags_val = v; return;}
+    if (*arg == '\0') {return;}
+
+    for (int k=0; k<ntags; k++) {
+      if (strcmp(arg,names[k])==0) {
+        if (v) tst_tags_val |=  (1<<k);
+        else   tst_tags_val &= ~(1<<k);
+      }
     }
-    else for (int k=0; k<ntags; k++)
-      if (strcmp(arg,names[k])==0) *(states[k])=v;
   }
 }
 
@@ -89,8 +98,8 @@ static inline void tst_parse_tags(int argc, const char **argv, int ntags, int*st
 
 #define tst(x) (tst_result = !!(x))
 
-static inline int tstfailed(char *s) {return !tst_result;}
-static inline int tstpassed(char *s) {return  tst_result;}
+static inline int tstfailed() {return !tst_result;}
+static inline int tstpassed() {return  tst_result;}
 
 // This is only used to avoid that the compiler could complain about unused static variables.
 #define tst_usestatic (tst_result | tst_case | tst_case_pass | tst_case_fail | tst_case_skip)
@@ -141,7 +150,7 @@ static inline int tstpassed(char *s) {return  tst_result;}
 #define tstclock(...) \
    for(clock_t clk=clock(); \
        clk; \
-       clk=clock()-clk,fprintf(stderr,"CLCK│⚑ %f ms. ",((double)clk)/((double)CLOCKS_PER_SEC/1000.0)), clk=tst_prtf(__VA_ARGS__))
+       clk=clock()-clk,fprintf(stderr,"CLCK│⚑ %f ms. ",((double)clk)/((double)(CLOCKS_PER_SEC/1000))), clk=tst_prtf(__VA_ARGS__))
 
 #define tstdata(...) \
    for(int tst = !(fflush(stdout) , tst_prtf("DATA│ ▽▽▽ " __VA_ARGS__)); \
