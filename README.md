@@ -239,7 +239,6 @@ execution of groups of tests via the `TSTTAGS` environment variable. For example
     $ TSTTAGS=-NODB make -B runtest
   ```
 
-
 ### Full example:
 
 ```c
@@ -319,7 +318,17 @@ To ensure that the `makefile` correctly identifies unit test files:
 
   The `makefile` will automatically detect all C files prefixed with `t_`, compile them, and execute each test.
 
+### Returning error
 
+By default, if a test fails, it will return 1 to signal it as an error. This might be undesirable if the
+tests are run in a script that could interepret this as signal to interrupt the execution.
+
+You can avoid this by specifiying `=` as the first argument:
+
+```bash
+  $ t_test =
+```
+so that it will always return 0.
 
 ### Benefits
 

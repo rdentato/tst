@@ -61,7 +61,7 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
   unsigned char v=1; const char *arg;
   if (names[0][0] == '\0') ntags=tst_tags_zero(); 
   if (argc > 1 && argv[1][0] == '?') {
-    fprintf(stderr,"Test Scenario: \"%s\"\n%s %s",tst_title, argv[0], ntags>0? "[? | [+/-]tag ...]\ntags: " : "[?]");
+    fprintf(stderr,"Test Scenario: \"%s\"\n%s %s",tst_title, argv[0], ntags>0? "[? | [=] [+/-]tag ... ]\ntags: " : "[? | =]");
     for (int k=0; k<ntags; k++) fprintf(stderr,"%s ",names[k]);
     fputc('\n',stderr);
     exit(1);
@@ -84,6 +84,7 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
       }
     }
   }
+  // Return 1 if errors are to be reported as program failure
   return (!(argc > 1 && argv[1][0] == '='));
 }
 
