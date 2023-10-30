@@ -8,19 +8,19 @@ tstrun("Sections")
   tstcase("All sections") {
     int a = -1;
 
-    tstsetup() {
+    tstsetup("Preparing for 5 starting from %d",a) {
       a = 5;
       tstcheck(a==5);
     }
-    tstsection() {
+    tstsection("Changing to 8 stating from %d",a) {
       tstcheck(a==5);
       a = 8;
     }
-    tstsection() {
+    tstsection("Changing to 9 stating from %d",a) {
       tstcheck(a==5);
       a = 9;
     }
-    tstcleanup() {
+    tstcleanup("Cleanup with %d",a) {
       a = 0;
     }
 
