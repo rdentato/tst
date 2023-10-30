@@ -33,13 +33,21 @@ SRCDIR=../src
 
 runtest: all
 	@rm -f test.log
-	@for f in $(TESTS); do ./$$f $(TSTTAGS) 2>> test.log; done 
+	-@for f in $(TESTS); do ./$$f $(TSTTAGS) 2>> test.log; done 
 	@echo -n "LOG: test.log  FAIL: `grep '^FAIL' test.log | wc -l` "
 	@echo -n "PASS: `grep '^PASS' test.log | wc -l`  "
 	@echo    "SKIP: `grep '^SKIP' test.log | wc -l`"
 	@echo "EXPECTED 1 FAIL HERE △"
 
-#.PRECIOUS: %.o
+MAKEFLAGS += --no-builtin-rules
+
+%.o: %.c
+	$(CC) $(CFLAGS) -o $*.o -c $< 
+
+%: %.o functions.o
+	$(CC) -o $* $< functions.o -lm
+
+.PRECIOUS: %.o
 
 clean:
 	rm -f $(TESTS) $(TESTS:=.exe) $(TESTS:=.o) test.log

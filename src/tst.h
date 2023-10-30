@@ -21,7 +21,6 @@ static unsigned short tst_case_skip = 0;
 static int tst_pass = 0; // A test run can have up to 2 Billions checks!
 static int tst_fail = 0;
 static int tst_skip = 0;
-static short tst_case = 0;
 static short tst_result = 0;
 static const char* tst_title;
 
@@ -52,13 +51,13 @@ static unsigned char tst_tags_val = 0xFF;
    static unsigned char tst_tag_##_5=0x10; static unsigned char tst_tag_##_6=0x20; \
    static unsigned char tst_tag_##_7=0x40; static unsigned char tst_tag_##_8=0x80; \
    static const char *tst_tag_names[8] = {#_1,#_2,#_3,#_4,#_5,#_6,#_7,#_8}; \
-   static inline void tst_parsetags(int argc, const char **argv) {tst_parse_tags(argc,argv, n_, tst_tag_names);}\
+   static inline int tst_parsetags(int argc, const char **argv) {return tst_parse_tags(argc,argv, n_, tst_tag_names);}\
    static inline int tst_tags_zero() { return tst_zero & (tst_tag_##_1 | tst_tag_##_2 | tst_tag_##_3| tst_tag_##_4| \
                                                           tst_tag_##_5 | tst_tag_##_6 | tst_tag_##_7| tst_tag_##_8); }
 
 static inline int tst_tags_zero(); // tst_tags_zero() always returns 0 and is used just to avoid compiler warnings.
 
-static inline void tst_parse_tags(int argc, const char **argv, int ntags, const char **names) {
+static inline int tst_parse_tags(int argc, const char **argv, int ntags, const char **names) {
   unsigned char v=1; const char *arg;
   if (names[0][0] == '\0') ntags=tst_tags_zero(); 
   if (argc > 1 && argv[1][0] == '?') {
@@ -67,23 +66,25 @@ static inline void tst_parse_tags(int argc, const char **argv, int ntags, const 
     fputc('\n',stderr);
     exit(1);
   }
-  if (ntags == 0) return;
-  for (int n=1; n<argc; n++) {
-    arg = argv[n];
-    v = 0xFF;
-    if (*arg == '-') {arg++; v=0x00;}
-    if (*arg == '+') {arg++;}
-    
-    if (*arg == '*') {tst_tags_val = v; return;}
-    if (*arg == '\0') {return;}
-
-    for (int k=0; k<ntags; k++) {
-      if (strcmp(arg,names[k])==0) {
-        if (v) tst_tags_val |=  (1<<k);
-        else   tst_tags_val &= ~(1<<k);
+  if (ntags > 0) {
+    for (int n=1; n<argc; n++) {
+      arg = argv[n];
+      v = 0xFF;
+      if (*arg == '-') {arg++; v=0x00;}
+      if (*arg == '+') {arg++;}
+      
+      if (*arg == '*') {tst_tags_val = v; continue;}
+      if (*arg == '\0') continue;
+  
+      for (int k=0; k<ntags; k++) {
+        if (strcmp(arg,names[k])==0) {
+          if (v) tst_tags_val |=  (1<<k);
+          else   tst_tags_val &= ~(1<<k);
+        }
       }
     }
   }
+  return (!(argc > 1 && argv[1][0] == '='));
 }
 
 #ifdef TSTFULLPATH
@@ -102,12 +103,17 @@ static inline int tstfailed() {return !tst_result;}
 static inline int tstpassed() {return  tst_result;}
 
 // This is only used to avoid that the compiler could complain about unused static variables.
-#define tst_usestatic (tst_result | tst_case | tst_case_pass | tst_case_fail | tst_case_skip)
+#define tst_usestatic (tst_result | tst_case_pass | tst_case_fail | tst_case_skip)
 
 #define tst_init_case() (tst_case_pass=tst_case_fail=tst_case_skip=0)
 
+#if 0
 #define tst_prtf(...) \
    (fprintf(stderr, __VA_ARGS__), fprintf(stderr, " » %s:%d\n", tst_filename((char *)__FILE__), __LINE__), tst_zero=0)
+#endif
+
+#define tst_prtf(...) \
+   (fprintf(stderr, __VA_ARGS__), fprintf(stderr, " :%d\n", __LINE__), tst_zero=0)
 
 #define tstcheck(tst_,...)  \
    do { tst(tst_); \
@@ -128,20 +134,21 @@ static inline int tstpassed() {return  tst_result;}
   tst_tags(0,__VA_ARGS__); void tst__run(int n); \
   int main(int argc, const char **argv) { \
     tst_title = title_; \
-    tst_parsetags(argc,argv); \
-    fprintf(stderr,"FILE ▷ %s \"%s%s\"\n", tst_filename((char *)__FILE__), tst_title, (tst_?"":" (disabled)"));\
+    int report_err = 1; \
+    report_err = tst_parsetags(argc,argv); \
+    fprintf(stderr,"FILE ▷ %s \"%s%s\"\n", __FILE__, tst_title, (tst_?"":" (disabled)"));\
     if (tst_) tst__run(tst_usestatic); \
     fprintf(stderr,"RSLT ▷ %d KO | %d OK | %d SKIP\n", tst_fail, tst_pass, tst_skip);\
-    return (tst_fail > 0); \
+    return ((tst_fail > 0) * report_err); \
   } void tst__run(int n) 
 
 #define tstrun(title_,...)  tstrun_((!tst_zero), title_, __VA_ARGS__)
 #define tst_run(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
 
 #define tstcase(...) \
-   for (tst_case = !(tst_prtf("CASE┬── " __VA_ARGS__),tst_init_case());  \
-        tst_case; \
-        fprintf(stderr,"    ╰── %d KO | %d OK | %d SKIP\n", tst_case_fail, tst_case_pass, tst_case_skip), tst_case = 0) 
+   for (int tst = !(tst_prtf("CASE┬── " __VA_ARGS__),tst_init_case());  \
+        tst; \
+        fprintf(stderr,"    ╰── %d KO | %d OK | %d SKIP\n", tst_case_fail, tst_case_pass, tst_case_skip), tst = 0) 
 
 #define tstgroup(tst_,...) \
    if (!(tst_) && (tst_prtf("SKIP├┬ " #tst_), fprintf(stderr,"    │╰ " __VA_ARGS__), fputc('\n',stderr), ++tst_skip, ++tst_case_skip)) ; \
@@ -150,14 +157,14 @@ static inline int tstpassed() {return  tst_result;}
 #define tstclock(...) \
    for(clock_t clk=clock(); \
        clk; \
-       clk=clock()-clk,fprintf(stderr,"CLCK│⚑ %f ms. ",((double)clk)/((double)(CLOCKS_PER_SEC/1000))), clk=tst_prtf(__VA_ARGS__))
+       clk=clock()-clk,fprintf(stderr,"CLCK⚑  %f ms. ",((double)clk)/((double)(CLOCKS_PER_SEC/1000))), clk=tst_prtf(__VA_ARGS__))
 
 #define tstdata(...) \
-   for(int tst = !(fflush(stdout) , tst_prtf("DATA│ ▽▽▽ " __VA_ARGS__)); \
+   for(int tst = !(fflush(stdout) , tst_prtf("DATA▽▽▽ " __VA_ARGS__)); \
        tst; \
-       tst=0, fflush(stdout), fputs("\nDATA│ △△△\n",stderr))
+       tst=0, fflush(stdout), fprintf(stderr,"\nDATA△△△ :%d\n",__LINE__))
 
-#define tstnote(...) (fprintf(stderr,"NOTE%s🗎",tst_case?"│":" "), tst_prtf(" " __VA_ARGS__))
+#define tstnote(...) (tst_prtf("NOTE🗎 " __VA_ARGS__))
 
 #define tst_check(...)
 #define tst_assert(...)

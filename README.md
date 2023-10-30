@@ -139,7 +139,7 @@ DATA│ ▽▽▽ Useful Debug Data » tst_test.c:37
 
 MYDATA MYDATA MYDATA MYDATA MYDATA
  MYDATA MYDATA MYDATA MYDATA 
-
+``````
 DATA│ △△△
 NOTE 🗎 Testing Complete. Review for any FAIL flags. » tst_test.c:41
 RSLT ▷ 1 KO | 3 OK | 1 SKIP
@@ -151,7 +151,6 @@ For example if we have this test case:
    tstcase ("Check for 0") {
 
    }
-
 ```
 we can leave it out this way (has an underscore after `tst`):
 ```
