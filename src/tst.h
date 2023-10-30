@@ -167,6 +167,10 @@ static inline int tstpassed() {return  tst_result;}
 
 #define tstnote(...) (tst_prtf("NOTE🗎 " __VA_ARGS__))
 
+#define tstsetup(...)    tst_prtf("STUP┼── " __VA_ARGS__) ; for (short tst_vars[2] = {0,-2} ; tst_vars[1] == -2 ; tst_vars[0] += 1) { (tst_vars[1]=-1);
+#define tstsection(...)    if (!((tst_vars[1] != -2) && (++tst_vars[1] == tst_vars[0]) && (tst_vars[1]=-2) && !tst_prtf("SCTN┼── " __VA_ARGS__))) ; else 
+#define tstcleanup(...)  } if (tst_zero||tst_prtf("CLUP┼── " __VA_ARGS__)) ; else
+
 #define tst_check(...)
 #define tst_assert(...)
 #define tst_note(...)
