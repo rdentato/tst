@@ -11,7 +11,7 @@ endif
 
 CXX_AVAILABLE := $(shell $(CXX) --version 2>/dev/null)
 
-CFLAGS=-O2 -Wall -I../src -I. $(STATIC) -DDEBUG
+CFLAGS=-O2 -Wall -I../src -I. $(STATIC) $(COMPACT) -DDEBUG
 LIBS=
 
 TESTS_SRC_C=$(wildcard t_*.c)
