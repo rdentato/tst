@@ -25,12 +25,12 @@ tstrun("Primary Test Suite")
     }
     
     tstcase("Grouped Checks: Edge Cases") {
-      tstgroup(1 == 2, "Inequality" ) {  // Will be skipped!
+      tstif(1 == 2, "Inequality" ) {  // Will be skipped!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }
 
-      tstgroup(1 != 2,"Equality") {  // Will be executed!
+      tstif(1 != 2,"Equality") {  // Will be executed!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }

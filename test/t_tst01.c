@@ -5,7 +5,7 @@
 
 tstrun("Switching groups on and off",NoDB, FileOnly, SimpleRun)
 {
-  tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
+  tstif(tsttag(NoDB) && !tsttag(SimpleRun)) {
      // Only if NoDB is enabled and SimpleRun is disabled.
   }
 }

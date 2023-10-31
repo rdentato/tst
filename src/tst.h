@@ -88,30 +88,15 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
   return (!(argc > 1 && argv[1][0] == '='));
 }
 
-#ifdef TSTFULLPATH
-  #define tst_filename(f) f
-#else
-  static inline char *tst_filename(char *fname) {
-    char *s;
-    if ((s = strrchr(fname,'/')) || (s = strrchr(fname, '\\'))) return s+1;
-    return fname;
-  }
-#endif
-
 #define tst(x) (tst_result = !!(x))
 
 static inline int tstfailed() {return !tst_result;}
 static inline int tstpassed() {return  tst_result;}
 
-// This is only used to avoid that the compiler could complain about unused static variables.
+// This is only used to avoid that the compiler complaining about unused static variables.
 #define tst_usestatic (tst_result | tst_case_pass | tst_case_fail | tst_case_skip)
 
 #define tst_init_case() (tst_case_pass=tst_case_fail=tst_case_skip=0)
-
-#if 0
-#define tst_prtf(...) \
-   (fprintf(stderr, __VA_ARGS__), fprintf(stderr, " » %s:%d\n", tst_filename((char *)__FILE__), __LINE__), tst_zero=0)
-#endif
 
 #define tst_prtf(...) \
    (fprintf(stderr, __VA_ARGS__), fprintf(stderr, " :%d\n", __LINE__), tst_zero=0)
@@ -147,37 +132,41 @@ static inline int tstpassed() {return  tst_result;}
 #define tst_run(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
 
 #define tstcase(...) \
-   for (int tst = !(tst_prtf("CASE┬── " __VA_ARGS__),tst_init_case());  \
-        tst; \
-        fprintf(stderr,"    ╰── %d KO | %d OK | %d SKIP\n", tst_case_fail, tst_case_pass, tst_case_skip), tst = 0) 
+   for (int tst_ = (tst_prtf("CASE┬── " __VA_ARGS__),tst_init_case());  \
+        tst_ == 0; \
+        tst_ = 1, fprintf(stderr,"    ╰── %d KO | %d OK | %d SKIP\n", tst_case_fail, tst_case_pass, tst_case_skip)) 
 
-#define tstgroup(tst_,...) \
+#define tstif(tst_,...) \
    if (!(tst_) && (tst_prtf("SKIP├┬ " #tst_), fprintf(stderr,"    │╰ " __VA_ARGS__), fputc('\n',stderr), ++tst_skip, ++tst_case_skip)) ; \
    else
 
 #define tstclock(...) \
-   for(clock_t clk=clock(); \
+   for(clock_t clk = clock(); \
        clk; \
-       clk=clock()-clk,fprintf(stderr,"CLCK⚑  %f ms. ",((double)clk)/((double)(CLOCKS_PER_SEC/1000))), clk=tst_prtf(__VA_ARGS__))
+       clk = clock()-clk,fprintf(stderr,"CLCK⚑  %f ms. ",((double)clk)/((double)(CLOCKS_PER_SEC/1000))), clk=tst_prtf(__VA_ARGS__))
 
 #define tstdata(...) \
-   for(int tst = !(fflush(stdout) , tst_prtf("DATA▽▽▽ " __VA_ARGS__)); \
-       tst; \
-       tst=0, fflush(stdout), fprintf(stderr,"\nDATA△△△ :%d\n",__LINE__))
+   for(int tst_ = (fflush(stdout) , tst_prtf("DATA ▽▽▽ " __VA_ARGS__)); \
+       tst_ == 0; \
+       tst_ = 1, fflush(stdout), fprintf(stderr,"\nDATA △△△ :%d\n",__LINE__))
 
-#define tstnote(...) (tst_prtf("NOTE🗎 " __VA_ARGS__))
+#define tstnote(...) (tst_prtf("NOTE: " __VA_ARGS__))
 
-#define tstsetup(...)    tst_prtf("STUP┼── " __VA_ARGS__) ; for (short tst_vars[2] = {0,-2} ; tst_vars[1] == -2 ; tst_vars[0] += 1) { (tst_vars[1]=-1);
-#define tstsection(...)    if (!((tst_vars[1] != -2) && (++tst_vars[1] == tst_vars[0]) && (tst_vars[1]=-2) && !tst_prtf("SCTN┼── " __VA_ARGS__))) ; else 
-#define tstcleanup(...)  } if (tst_zero||tst_prtf("CLUP┼── " __VA_ARGS__)) ; else
+#define tstgroup(...)    if (tst_prtf("GRUP┼── " __VA_ARGS__)) ; \
+                         else for ( short tst_vars[2] = {0,-2} ; (tst_vars[1] == -2) && (tst_vars[1] = -1) ; tst_vars[0] += 1) 
+
+#define tstsection(...)    if (!((tst_vars[1] != -2) && (++tst_vars[1] == tst_vars[0]) && (tst_vars[1] = -2) && !tst_prtf("SCTN┼── " __VA_ARGS__))) ;\
+                           else 
 
 #define tst_check(...)
 #define tst_assert(...)
 #define tst_note(...)
-#define tst_data(...)  if (!tst_zero) ; else
-#define tst_case(...)  if (!tst_zero) ; else
-#define tst_group(...) if (!tst_zero) ; else
-#define tst_clock(...) if ( tst_zero) ; else
+#define tst_data(...)     if (!tst_zero) ; else
+#define tst_case(...)     if (!tst_zero) ; else
+#define tst_if(...)       if (!tst_zero) ; else
+#define tst_section(...)  if (!tst_zero) ; else
+#define tst_group(...)    if (!tst_zero) ; else
+#define tst_clock(...)    if ( tst_zero) ; else
 
 #ifdef __cplusplus
 }
