@@ -27,6 +27,9 @@ whose prototypes are also in `functions.h` and you want to properly test them to
 You'll find the code in the `test` directory.
 
 The first function we'll look at is the one to calculate the factorial of a number:
+(Note: There will be further versions of this function along the tutorial, they will be numbered
+with `fact_0`, `fact_1`, etc.)
+
 
 ```c
 unsigned int fact_0(unsigned int n)
@@ -36,8 +39,6 @@ unsigned int fact_0(unsigned int n)
 }
 ```
 
-There will be further versions of this function along the tutorial, they will be numbered
-with `fact_0`, `fact_1`, etc.
 
 You will create a separate file called, say, `t_fact_0.c` with all the checks you wannt to perform
 on the function:
@@ -50,7 +51,7 @@ tstrun("Factorials") {
   tstcheck( fact_0(1) == 1 );
   tstcheck( fact_0(2) == 2 );
   tstcheck( fact_0(3) == 6 );
-  tstcheck( fact_0(10) == 3628800 );
+  tstcheck( fact_0(5) == 120 );
 }
 ```
 Once you compile and link it with the file where the `Factorial()` function is defined, you'll get
@@ -65,7 +66,7 @@ FILE ▷ t_fact.c "Check Factorial"
 PASS│  fact(1) == 1 :5
 PASS│  fact(2) == 2 :6
 PASS│  fact(3) == 6 :7
-PASS│  fact(10) == 3628800 :8
+PASS│  fact(5) == 120 :8
 RSLT ▷ 0 KO | 4 OK | 0 SKIP
 ```
 
