@@ -33,7 +33,7 @@ SRCDIR=../src
 
 runtest: all
 	@rm -f test.log
-	-@for f in $(TESTS); do ./$$f $(TSTTAGS) 2>> test.log; done 
+	-@for f in $(TESTS); do ./$$f '=' $(TSTTAGS) 2>> test.log; done 
 	@echo -n "LOG: test.log  FAIL: `grep '^FAIL' test.log | wc -l` "
 	@echo -n "PASS: `grep '^PASS' test.log | wc -l`  "
 	@echo    "SKIP: `grep '^SKIP' test.log | wc -l`"
