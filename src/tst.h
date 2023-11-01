@@ -13,6 +13,7 @@ extern "C" {
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <assert.h>
 
 static volatile short tst_zero = 0;
 static unsigned short tst_case_pass = 0; // A test case can't have more than 65535 checks!
@@ -29,6 +30,9 @@ static const char* tst_title;
 #define tst__cat2(x,y)  x ## y
 #define tst__cat(x,y)   tst__cat2(x,y)
 #define tst_vrg(tst__f,...) tst__cat(tst__f, tst__argn(__VA_ARGS__))(__VA_ARGS__)
+
+#define tst__arg1(...)  tst__cnt(__VA_ARGS__, _, _, _, _, _, _, _, _, 1, _)
+#define tst_vrg1(tst__f,...) tst__cat(tst__f, tst__arg1(__VA_ARGS__))(__VA_ARGS__)
 
 // TAGS
 #define tst_tags(...) tst_vrg(tst_tags_,__VA_ARGS__)
@@ -99,58 +103,58 @@ static inline int tstpassed() {return  tst_result;}
 #define tst_init_case() (tst_case_pass=tst_case_fail=tst_case_skip=0)
 
 #ifndef TST_STR_COMPACT
-  #define TST_STR_PASS     "PASS│ "
-  #define TST_STR_FAIL     "FAIL├┬"
-  #define TST_STR_FAIL_2ND "    │╰ "
-  #define TST_STR_SKIP     "SKIP├┬ "
-  #define TST_STR_SKIP_2ND "    │╰ "
-  #define TST_STR_CASE     "CASE┬── "
-  #define TST_STR_CASE_END "    ╰── %d KO | %d OK | %d SKIP"
-  #define TST_STR_FILE     "FILE ▷"
-  #define TST_STR_FILE_END "RSLT ▷ %d KO | %d OK | %d SKIP"
-  #define TST_STR_CLCK     "CLCK⚑  %f ms. "
-  #define TST_STR_DATA     "DATA ▽▽▽ "
-  #define TST_STR_DATA_END "\nDATA △△△" TST_STR_LINE
-  #define TST_STR_NOTE     "NOTE: "
-  #define TST_STR_GRUP     "GRUP┼── " 
-  #define TST_STR_SCTN     "SCTN┼── "
-  #define TST_STR_LINE     " :%d\n"
+  const char *TST_STR_PASS     = "PASS│  ";
+  const char *TST_STR_FAIL_1   = "FAIL│  ";
+  const char *TST_STR_FAIL     = "FAIL├┬ ";
+  const char *TST_STR_FAIL_2ND = "    │╰";
+  const char *TST_STR_SKIP     = "SKIP├┬ %s";
+  const char *TST_STR_SKIP_2ND = "    │╰";
+  const char *TST_STR_CASE     = "CASE┬── ";
+  const char *TST_STR_CASE_END = "    ╰── %d KO | %d OK | %d SKIP\n";
+  const char *TST_STR_FILE     = "FILE ▷";
+  const char *TST_STR_FILE_END = "RSLT ▷ %d KO | %d OK | %d SKIP\n";
+  const char *TST_STR_CLCK     = "CLCK⚑  %f ms. ";
+  const char *TST_STR_DATA     = "DATA ▽▽▽ ";
+  const char *TST_STR_DATA_END = "\nDATA △△△ :%d\n";
+  const char *TST_STR_NOTE     = "NOTE: ";
+  const char *TST_STR_GRUP     = "GRUP┼── ";
+  const char *TST_STR_SCTN     = "SCTN┼── ";
+  const char *TST_STR_LINE     = " :%d\n";
 #else
-  #define TST_STR_PASS     "P"
-  #define TST_STR_FAIL     "F"
-  #define TST_STR_FAIL_2ND "f "
-  #define TST_STR_SKIP     "S "
-  #define TST_STR_SKIP_2ND "s "
-  #define TST_STR_CASE     "C "
-  #define TST_STR_CASE_END "c %d %d %d"
-  #define TST_STR_FILE     "R"
-  #define TST_STR_FILE_END "r %d %d %d"
-  #define TST_STR_CLCK     "T %f "
-  #define TST_STR_DATA     "D "
-  #define TST_STR_DATA_END "\nd " TST_STR_LINE
-  #define TST_STR_NOTE     "N "
-  #define TST_STR_GRUP     "G " 
-  #define TST_STR_SCTN     "N "
-  #define TST_STR_LINE     ":\xF%d\n"
+  const char *TST_STR_PASS     = "P ";
+  const char *TST_STR_FAIL_1   = "F ";
+  const char *TST_STR_FAIL     = "F ";
+  const char *TST_STR_FAIL_2ND = "f";
+  const char *TST_STR_SKIP     = "S %s";
+  const char *TST_STR_SKIP_2ND = "s";
+  const char *TST_STR_CASE     = "C ";
+  const char *TST_STR_CASE_END = "c %d %d %d\n";
+  const char *TST_STR_FILE     = "R";
+  const char *TST_STR_FILE_END = "r %d %d %d\n";
+  const char *TST_STR_CLCK     = "T %f ";
+  const char *TST_STR_DATA     = "D ";
+  const char *TST_STR_DATA_END = "\nd \xF%d\n";
+  const char *TST_STR_NOTE     = "N ";
+  const char *TST_STR_GRUP     = "G ";
+  const char *TST_STR_SCTN     = "N ";
+  const char *TST_STR_LINE     = ":\xF%d\n";
 #endif
 
 #define tst_prtf(...) \
    (fprintf(stderr, __VA_ARGS__), fprintf(stderr, TST_STR_LINE , __LINE__), tst_zero=0)
 
-#define tstcheck(tst_,...)  \
-   do { tst(tst_); \
-        tst_prtf("%s %s", tst_result ? (tst_pass++, tst_case_pass++,TST_STR_PASS) \
-                                     : (tst_fail++, tst_case_fail++,TST_STR_FAIL), #tst_); \
-        if (!tst_result) {fprintf(stderr,TST_STR_FAIL_2ND __VA_ARGS__); fputc('\n',stderr);} \
+#define tstcheck(t_,...) do {const char* tst_s = #t_; tst_vrg1(tst__check_,!!(t_),__VA_ARGS__); } while(0);
+#define tst__check_1(t_)     tstcheck_(0, t_)
+#define tst__check__(t_,...) tstcheck_(1, t_, __VA_ARGS__)
+
+#define tstcheck_(f_, tst_,...)  \
+   do { if ((tst_result = tst_)) { tst_pass++; tst_case_pass++; fputs(TST_STR_PASS, stderr); } \
+        else { tst_fail++; tst_case_fail++; fputs((f_ ? TST_STR_FAIL : TST_STR_FAIL_1), stderr); } \
+        tst_prtf("%s", tst_s); \
+        if (f_ && !tst_result) {fputs(TST_STR_FAIL_2ND, stderr); fprintf(stderr," " __VA_ARGS__); fputc('\n',stderr);} \
    } while(0)
 
-// Duplicated to avoid double expansion of the `tst_` argument
-#define tstassert(tst_,...)  \
-   do { tst(tst_); \
-        tst_prtf("%s %s", tst_result ? (tst_pass++, tst_case_pass++,TST_STR_PASS) \
-                                     : (tst_fail++, tst_case_fail++,TST_STR_FAIL), #tst_); \
-        if (!tst_result) {fprintf(stderr,TST_STR_FAIL_2ND __VA_ARGS__); fputc('\n',stderr); abort();} \
-   } while(0)
+#define tstassert(...) do {tstcheck(__VA_ARGS__); if (!tst_result) abort();} while(0)
 
 #define tstrun_(tst_, title_,...) \
   tst_tags(0,__VA_ARGS__); void tst__run(int n); \
@@ -158,22 +162,22 @@ static inline int tstpassed() {return  tst_result;}
     tst_title = title_; \
     int report_err = 1; \
     report_err = tst_parsetags(argc,argv); \
-    fprintf(stderr,TST_STR_FILE " %s \"%s\"%s\n", __FILE__, tst_title, (tst_?"":" (disabled)"));\
+    fprintf(stderr, "%s %s \"%s\"%s\n", TST_STR_FILE, __FILE__, tst_title, (tst_?"":" (disabled)"));\
     if (tst_) tst__run(tst_usestatic); \
-    fprintf(stderr,TST_STR_FILE_END "\n", tst_fail, tst_pass, tst_skip);\
+    fprintf(stderr,TST_STR_FILE_END, tst_fail, tst_pass, tst_skip);\
     return ((tst_fail > 0) * report_err); \
-  } void tst__run(int n) 
+  } void tst__run(int tst_n) 
 
 #define tstrun(title_,...)  tstrun_((!tst_zero), title_, __VA_ARGS__)
 #define tst_run(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
 
 #define tstcase(...) \
-   for (int tst_ = (tst_prtf(TST_STR_CASE __VA_ARGS__),tst_init_case());  \
+   for (int tst_ = (fputs(TST_STR_CASE,stderr),tst_prtf(__VA_ARGS__),tst_init_case());  \
         tst_ == 0; \
-        tst_ = 1, fprintf(stderr,TST_STR_CASE_END "\n", tst_case_fail, tst_case_pass, tst_case_skip)) 
+        tst_ = 1, fprintf(stderr,TST_STR_CASE_END, tst_case_fail, tst_case_pass, tst_case_skip)) 
 
 #define tstif(tst_,...) \
-   if (!(tst_) && (tst_prtf(TST_STR_SKIP #tst_), fprintf(stderr,TST_STR_SKIP_2ND __VA_ARGS__), fputc('\n',stderr), ++tst_skip, ++tst_case_skip)) ; \
+   if (!(tst_) && (tst_prtf(TST_STR_SKIP, #tst_), fputs(TST_STR_SKIP_2ND, stderr), fprintf(stderr," " __VA_ARGS__), fputc('\n',stderr), ++tst_skip, ++tst_case_skip)) ; \
    else
 
 #define tstclock(...) \
@@ -182,16 +186,16 @@ static inline int tstpassed() {return  tst_result;}
        clk = clock()-clk,fprintf(stderr, TST_STR_CLCK, ((double)clk)/((double)(CLOCKS_PER_SEC/1000))), clk=tst_prtf(__VA_ARGS__))
 
 #define tstdata(...) \
-   for(int tst_ = (fflush(stdout) , tst_prtf(TST_STR_DATA __VA_ARGS__)); \
+   for(int tst_ = (fflush(stdout), fputs(TST_STR_DATA, stderr), tst_prtf(__VA_ARGS__)); \
        tst_ == 0; \
-       tst_ = 1, fflush(stdout), fprintf(stderr,TST_STR_DATA_END ,__LINE__))
+       tst_ = 1, fflush(stdout), fprintf(stderr, TST_STR_DATA_END,__LINE__))
 
-#define tstnote(...) (tst_prtf(TST_STR_NOTE __VA_ARGS__))
+#define tstnote(...) (fputs(TST_STR_NOTE,stderr), tst_prtf( __VA_ARGS__))
 
-#define tstgroup(...)    if (tst_prtf(TST_STR_GRUP __VA_ARGS__)) ; \
+#define tstgroup(...)    if (fputs(TST_STR_GRUP,stderr), tst_prtf(__VA_ARGS__)) ; \
                          else for ( short tst_vars[2] = {0,-2} ; (tst_vars[1] == -2) && (tst_vars[1] = -1) ; tst_vars[0] += 1) 
 
-#define tstsection(...)    if (!((tst_vars[1] != -2) && (++tst_vars[1] == tst_vars[0]) && (tst_vars[1] = -2) && !tst_prtf(TST_STR_SCTN __VA_ARGS__))) ;\
+#define tstsection(...)    if (!((tst_vars[1] != -2) && (++tst_vars[1] == tst_vars[0]) && (tst_vars[1] = -2) && !(fputs(TST_STR_SCTN,stderr), tst_prtf(__VA_ARGS__)))) ;\
                            else 
 
 #define tst_check(...)
