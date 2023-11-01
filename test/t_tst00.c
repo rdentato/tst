@@ -3,11 +3,6 @@
 
 #include "tst.h"  // Ensure the tst framework is included
 
-void myData(FILE *f)
-{
-  fprintf(f,"\nMYDATA MYDATA MYDATA MYDATA MYDATA\n   MYDATA MYDATA MYDATA MYDATA \n");
-}
-
 tstrun("Primary Test Suite")
 {
     tstcase("Equality Checks %d, %d", 1, 1) {
@@ -33,10 +28,6 @@ tstrun("Primary Test Suite")
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }
-    }
-    
-    tstdata("Useful Debug Data") {
-      myData(stderr);
     }
     
     tstnote("Testing Complete. Review for any FAIL flags. (One is expected)");
