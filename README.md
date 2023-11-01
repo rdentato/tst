@@ -41,11 +41,11 @@ If you want to use `tst`, just include `tst.h` and you're ready to write your te
      tstassert(1 == 1, "Critical: Value mismatch!");
      ```
    
-5. **tstgroup(int test, ... )**
+5. **tstif(int test, ... )**
    - **Purpose**: Conditionally executes a block of checks; skips if `test` is false.
    - **Example**:
      ```c
-     tstgroup(1 == 1) {
+     tstif(1 == 1) {
        tstcheck(2 == 2, "Secondary check failed!");
      }
      ```
@@ -59,32 +59,32 @@ If you want to use `tst`, just include `tst.h` and you're ready to write your te
      }
      ```
    
-7. **tstdata( ... )**
-   - **Purpose**: Attaches data blocks for enhanced test contextualization.
-   - **Example**:
-     ```c
-     tstdata("Relevant test data", dataPointer);
-     ```
-   
-8. **tstnote( ... )**
+7. **tstnote( ... )**
    - **Purpose**: Allows for the insertion of contextual notes within test output.
    - **Example**:
      ```c
      tstnote("Note: This test is pivotal for module X integrity.");
+     ```
+
+7. **tstgroup( ... ) / testsection( ...)**
+   - **Purpose**: Contains a set of tstsections to be executed one after the other with a common setup and cleanup code.
+   - **Example**:
+     ```c
+     tstgroup("Perform sequence of tests") {
+        // Setup code
+        a = 3;
+        tstsection("First test") {
+          tst                        
+        }
+     }
      ```
    
 ## Comprehensive Example
 ```c
 #include "tst.h"  // Ensure the tst framework is included
 
-void myData(FILE *f)
-{
-  fprintf(f,"\nMYDATA MYDATA MYDATA MYDATA MYDATA\n MYDATA MYDATA MYDATA MYDATA \n");
-}
-
 tstrun("Primary Test Suite")
-{
-    
+{    
     tstcase("Equality Checks %d, %d", 1, 1) {
       tstcheck(1 == 1, "Mismatch: %d != %d", 1, 1);
       tstcheck(1 != 1, "Failed on purpose");
@@ -99,24 +99,24 @@ tstrun("Primary Test Suite")
     }
     
     tstcase("Grouped Checks: Edge Cases") {
-      tstgroup(1 == 2, "Inequality" ) {  // Will be skipped!
+      tstif(1 == 2, "Inequality" ) {  // Will be skipped!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }
 
-      tstgroup(1 != 2,"Equality") {  // Will be executed!
+      tstif(1 != 2,"Equality") {  // Will be executed!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }
-    }
-    
-    tstdata("Useful Debug Data") {
-       myData(stderr);
     }
     
     tstnote("Testing Complete. Review for any FAIL flags.");
 }
 ```
+
+Compile and run the above program (no need for a `main()` function)
+to execute all the tests.
+
 ## Test Results:
 ```
 FILE ▷ tst_test.c "Primary Test Suite"
@@ -184,12 +184,12 @@ In the `tst` framework, the ability to tag and group tests is a powerful feature
      ```
    
 2. **Grouping Tests Using Tags**:
-   - Within `tstrun()`, use the `tstgroup` function in combination with the `tsttag` function to conditionally run specific blocks of tests based on the tags that are active.
+   - Within `tstrun()`, use the `tstif` function in combination with the `tsttag` function to conditionally run specific blocks of tests based on the tags that are active.
    - `tsttag(TagName)` returns a boolean value indicating whether a specific tag is active.
    - **Examples**:
      ```c
      tstrun("Title", Group1, Group2, Group3) {
-       tstgroup(tsttag(Group2) || tsttag(Group3)) {
+       tstif(tsttag(Group2) || tsttag(Group3)) {
          // This block will run only if either Group2 or Group3 is enabled.
        }
      }
@@ -197,7 +197,7 @@ In the `tst` framework, the ability to tag and group tests is a powerful feature
 
      ```c
      tstrun() {
-       tstgroup(!tsttag(Group1) && tsttag(Group3)) {
+       tstif(!tsttag(Group1) && tsttag(Group3)) {
          // This block will run only if Group1 is disabled and Group3 is enabled.
        }
      }
@@ -245,7 +245,7 @@ execution of groups of tests via the `TSTTAGS` environment variable. For example
 #include "tst.h"
 
 tstrun("Grouped tests",NoDB, FileOnly, SimpleRun) {
-  tstgroup(tsttag(NoDB) && !tsttag(SimpleRun)) {
+  tstif(tsttag(NoDB) && !tsttag(SimpleRun)) {
      // Only if NoDB is enabled and SimpleRun is disabled.
   }
 }
