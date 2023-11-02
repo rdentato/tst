@@ -147,18 +147,15 @@ in the `tstcheck()` function:
 
 ```c
   tstcheck((n=fact(0)) == 1, "Expected 1 got %d", n);
-
 ```
 
-If this is note feasible, for example because the result comes from a complex
-computation that you don't want to perform twice, you may add a string to remind
-what that test was about using this idiomatic form:
+If this is not feasible, or even just inconvenient, for example because the result 
+comes from a complex computation that you don't want to perform twice, you may add
+a string to remind what that test was about using this idiomatic form:
 
 ```c
   ... long calculation to compute n ...
   tstcheck("Starship orbit intersection" && (n == 0), "Expected 0 got %d", n);
-
-
 ```
 If this fails, it will produce:
 
@@ -168,10 +165,13 @@ FAIL├┬ "Starship orbit intersection" && (n == 0) :35
 ```
 Which contains a clear indication on what the test was about.
 
-## Structuring tests
+## Structuring tests 
 
 Within a test run, which is supposed to cover a logically meaniful scenario, you 
 may want to define multiple *test cases* whose checks are tightely related.
+
+The usefulness of `tstcase` is that it collects partial results and will allow you
+to focus on sets of tests rather than having to consider all the tests at once.
 
 For example, let's write a full test run for a more complete version of the factorial:
 
@@ -224,6 +224,141 @@ PASS│  (fact(21) == 0) && (errno == ERANGE) :22
 RSLT ▷ 0 KO | 8 OK | 0 SKIP
 ```
 
+While it is possible to nest test cases, it would be much clearer to 
+just write test cases one after the other.
 
+## Conditional test execution (and tagging)
+
+Let's say that you just have a set of tests to perform that use a DB but you
+can't get access to it. It would be useless to perform them, for cases like this
+you can rely on `tstif()`:
+
+``` C
+  tstcase("Read from FILE") {
+    FILE *f = NULL;
+
+    tstcheck(f = fopen("datafile.dat",rb), "Unable to open data file");
+    tstif(f,"Skipping file tests") {
+      // A bunch of checks that should read from the file
+    } else {
+      // Alterantive checks (or any appropriate action)
+    }
+  }
+```
+The `testif` function is also the basis for create tags. Say you have a set of 
+tests that are very expensive to run (e.g. too slow) and you want to be able to
+exclude them. For this you can create up to eight tags per run and switch them
+on/off.
+
+To check if a *tag* is enabled, you use the `tsttag()` function:
+
+```C
+tstrun("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
+{
+  tstcase() {
+    tstif(tsttag(TestDB) && !tsttag(SimpleRun)) {
+       // Only if TestDB is enabled and SimpleRun is disabled.
+       tstcheck(db.connection != NULL);
+    }
+    tstcheck(4 > p);
+  }
+
+  // You can enclose full testcases if you want!
+  tstif(tsttag(DeepTest)) {
+     testcase("Full tests") {
+        // checks here
+     }
+
+     testcase("Full tests twice") {
+        // checks here
+     }
+  }
+}
+```
+
+By default all tags are enabled. You can disable them when launching the test run.
+For example, to run `mytest` with the "DeepTest" disabled you can execute it this way:
+```
+  $ mytest -DeepTest
+```
+To know which tags are defined you can use the `?` command line option:
+
+```
+  $ mytest ?
+  Test Scenario: "Switching groups on and off"
+  ./mytest [? | [=] [+/-]tag ... ]
+  tags: TestDB DeepTest SimpleRun
+```
+
+You can also switch all the tags on/off using `*`. For example, to disable
+all tags except `SimpleRun`, you can execute the test as follows:
+
+```
+  $ mytest -* +SimpleRun
+```
+
+You can also set the tag on and off in the code using the `tsttag()` function:
+
+```C
+  tsttag(SimpleRun, 0); // Disable the testst guarded by the SimpleRun tag
+  tsttag(SimpleRun, 1); // Re-enable the testst guarded by the SimpleRun tag
+```
+
+
+
+## Data driven tests
+
+It might be useful to repeatedly perform a set of tests on a given set of data.
+
+For this you can use the `tstdata` functions.
+
+This is an example on how to do it:
+
+``` C
+  tstcase("Use static data") {
+
+    struct {int n; char *s;} tstdata[] = {
+             {123, "pippo"},
+             {431, "pluto"},
+             { 93, "topolino"}
+    };
+
+    tstdatafor("Verify edge cases") {
+      tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
+      tstcheck(f(tstcurdata.n , tstcurdata.s));
+    }
+  }
+```
+
+You first define the `tstdata` array and then use `tstdatafor()` to loop over the array.
+To access the current element of the array, you use `tstcurdata`.
+
+You are free to choose whatever type suits you most for the array. It can be a `struct` as in 
+the example above or could be a basic type like an int:
+
+```c
+  tstcase("A static integer array") {
+    int tstdata[] = {-1,3,4,5};
+    tstdatafor("Integers in the range [-10 10]") {
+      tstnote("Checking: %d", tstcurdata);
+      tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
+    }
+  }
+```
+
+This is very helpful if you want to extract a sample of the test data from a database or
+just randomly generate them like in this example:
+
+```c
+  tstcase("A random integer array") {
+    srand(time(0));
+    int tstdata[4]; // array size must be specified
+    for (int k=0; k<4; k++) tstdata[k] = 8-(rand() & 0x0F);
+    tstdatafor("Integers in the range [-10 10]") {
+      tstnote("Checking: %d", tstcurdata);
+      tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
+    }
+  }
+```
 
 [Home](Readme.md#top)
