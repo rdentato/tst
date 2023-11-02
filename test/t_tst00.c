@@ -22,6 +22,8 @@ tstrun("Primary Test Suite")
       tstif(1 == 2, "Inequality" ) {  // Will be skipped!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
+      } else {
+        tstnote("Done an else");
       }
 
       tstif(1 != 2,"Equality") {  // Will be executed!
