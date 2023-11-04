@@ -100,7 +100,7 @@ static inline int tstfailed() {return !tst_result;}
 static inline int tstpassed() {return  tst_result;}
 
 // This is only used to avoid that the compiler complaining about unused static variables.
-#define tst_usestatic (((tst_result | tst_case_pass | tst_case_fail | tst_case_skip) & tst_case_data[0])*((int)tstelapsed))
+#define tst_usestatic ((tst_result & tst_case_pass & tst_case_fail & tst_case_skip & tst_vars[0] & tstdata[0] & (int)tstelapsed))
 
 #ifndef TST_STR_COMPACT
   #define TST_STR_PASS      "PASS│  "
@@ -110,13 +110,11 @@ static inline int tstpassed() {return  tst_result;}
   #define TST_STR_SKIP      "SKIP├┬ %s"
   #define TST_STR_SKIP_2ND  "    │╰"
   #define TST_STR_CASE      "CASE┬── "
-  #define TST_STR_CASE_END  "    ╰── %d KO | %d OK | %d SKIP\n"
+  #define TST_STR_CASE_END  "    ╰── %d KO | %d OK | %d SKIP"
   #define TST_STR_FILE      "FILE ▷"
-  #define TST_STR_FILE_END  "RSLT ▷ %d KO | %d OK | %d SKIP\n"
+  #define TST_STR_FILE_END  "RSLT ▷ %d KO | %d OK | %d SKIP"
   #define TST_STR_CLCK      "CLCK⚑  %ld %ss "
   #define TST_STR_NOTE      "NOTE: "
-  #define TST_STR_GRUP      "GRUP├┬─"
-  #define TST_STR_GRUP_END  "    │└─"
   #define TST_STR_SCTN      "SCTN├┬─"
   #define TST_STR_SCTN_END  "    │└─"
   #define TST_STR_LINE      " :%d\n"
@@ -133,8 +131,6 @@ static inline int tstpassed() {return  tst_result;}
   #define TST_STR_FILE_END  "r %d %d %d\n"
   #define TST_STR_CLCK      "T %ld %ss "
   #define TST_STR_NOTE      "N "
-  #define TST_STR_GRUP      "G"
-  #define TST_STR_GRUP_END  "g"
   #define TST_STR_SCTN      "("
   #define TST_STR_SCTN_END  ")"
   #define TST_STR_LINE      "\xF:%d\n"
@@ -154,7 +150,12 @@ static inline int tstpassed() {return  tst_result;}
         if (f_ && !tst_result) {fputs(TST_STR_FAIL_2ND, stderr); fprintf(stderr," " __VA_ARGS__); fputc('\n',stderr);} \
    } while(0)
 
-#define tstassert(...) do {tstcheck(__VA_ARGS__); if (!tst_result) abort();} while(0)
+#define tstassert(...) do { tstcheck(__VA_ARGS__); \
+                            if (!tst_result) { \
+                              fprintf(stderr,TST_STR_FILE_END " (Aborted)\n", tst_fail, tst_pass, tst_skip); \
+                              abort();\
+                            } \
+                          } while(0)
 
 #define tstrun_(tst_, title_,...) \
   tst_tags(0,__VA_ARGS__); void tst__run(int n); \
@@ -167,7 +168,7 @@ static inline int tstpassed() {return  tst_result;}
     else if(CLOCKS_PER_SEC == ((clock_t)1000)) tst_clock_unit = "m"; \
     fprintf(stderr, "%s %s \"%s\"%s\n", TST_STR_FILE, __FILE__, tst_title, (tst_?"":" (disabled)"));\
     if (tst_) tst__run(tst_usestatic); \
-    fprintf(stderr,TST_STR_FILE_END, tst_fail, tst_pass, tst_skip);\
+    fprintf(stderr,TST_STR_FILE_END "\n", tst_fail, tst_pass, tst_skip); \
     return ((tst_fail > 0) * report_err); \
   } void tst__run(int tst_n) 
 
@@ -175,16 +176,7 @@ static inline int tstpassed() {return  tst_result;}
 #define tst_run(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
 
 // This is needed to allow usage of tstcheck outside a tstcase block.
-static volatile unsigned short tst_case_data[4] = {0};
-
-#define tst_case_pass tst_case_data[1]
-#define tst_case_fail tst_case_data[2]
-#define tst_case_skip tst_case_data[3]
-
-#define tstcase(...) \
-   for (unsigned short tst_case_data[4] = { (unsigned short)(fputs(TST_STR_CASE,stderr),tst_prtf(__VA_ARGS__),tst_zero),0,0,0 };  \
-        tst_case_data[0] == 0; \
-        tst_case_data[0] = 1, fprintf(stderr,TST_STR_CASE_END, tst_case_fail, tst_case_pass, tst_case_skip)) 
+static volatile unsigned short tst_vars[5] = {0};
 
 #define tstif(tst_,...) \
    if ((tst_) || (tst_prtf(TST_STR_SKIP, #tst_), fputs(TST_STR_SKIP_2ND, stderr), fprintf(stderr," " __VA_ARGS__), fputc('\n',stderr), ++tst_skip, ++tst_case_skip, tst_zero=0)) 
@@ -197,21 +189,29 @@ static volatile unsigned short tst_case_data[4] = {0};
 
 #define tstnote(...) (fputs(TST_STR_NOTE,stderr), tst_prtf( __VA_ARGS__))
 
+
 #define tst_sect_iterator  tst_vars[0]
 #define tst_sect_counter   tst_vars[1]
 #define tst_sect_executed  -2
 
-#define tstgroup(...) if (fputs(TST_STR_GRUP,stderr), tst_prtf(" " __VA_ARGS__)) ; \
-                      else for (short tst_vars[2] = {0, tst_sect_executed}; \
-                                ((tst_sect_counter == tst_sect_executed) && (tst_sect_counter = -1)) || tst_prtf("%s",TST_STR_GRUP_END); \
-                                tst_sect_iterator += 1)
+#define tst_case_pass tst_vars[2]
+#define tst_case_fail tst_vars[3]
+#define tst_case_skip tst_vars[4]
+
+#define tstcase(...) if (fputs(TST_STR_CASE,stderr), tst_prtf(" " __VA_ARGS__)) ; \
+                     else for (short tst_vars[5] = {0, tst_sect_executed, 0, 0, 0}; \
+                               ((tst_sect_counter == tst_sect_executed) && (tst_sect_counter = -1)) || tst_prtf(TST_STR_CASE_END, tst_case_fail, tst_case_pass, tst_case_skip); \
+                               tst_sect_iterator += 1)
 
 #define tstsection(...)    for (int tst_sect = 1; \
                                 tst_sect && (tst_sect_counter != tst_sect_executed) \
                                          && (++tst_sect_counter == tst_sect_iterator) \
                                          && !(fputs(TST_STR_SCTN,stderr), tst_prtf(" " __VA_ARGS__)); \
-                                tst_sect = 0, tst_sect_counter = tst_sect_executed, tst_prtf("%s",TST_STR_SCTN_END))
+                                tst_sect = 0, tst_sect_counter = tst_sect_executed, tst_prtf("%s",TST_STR_SCTN_END)) \
+                                for (int tst_data_count = 0; tst_data_count < (int)(sizeof(tstdata)/sizeof(tstdata[0])); tst_data_count++) 
                                
+static volatile unsigned short  tstdata[1]={0};
+#define tstcurdata tstdata[tst_data_count]
 
 #define tst_check(...)
 #define tst_assert(...)
@@ -219,7 +219,6 @@ static volatile unsigned short tst_case_data[4] = {0};
 #define tst_case(...)     if (!tst_zero) ; else
 #define tst_if(...)       if (!tst_zero) ; else
 #define tst_section(...)  if (!tst_zero) ; else
-#define tst_group(...)    if (!tst_zero) ; else
 #define tst_clock(...)    if ( tst_zero) ; else
 
 #ifdef __cplusplus
