@@ -3,10 +3,13 @@
 A minimalistic unit test framework for C (and C++). (Join us on [Discord](https://discord.gg/BqsZjDaUxg)!)
 
 ## Introduction
-`tst` is a lightweight unit testing framework designed for C programs. It provides a suite of functionalities to define, group, and validate test cases, while offering utilities for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fosters easy test integration into C projects.
+`tst` is a lightweight unit testing framework designed for C programs (but works for C++ as well). 
+It provides a suite of functionalities to define, group, and validate test cases, while offering utilities
+for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fosters easy test integration into C projects.
 
 I never understood why some of the most common unit test frameworks had so many files and complex build.
 If you want to use `tst`, just include `tst.h` and you're ready to write your test cases.
+
 
 ## Core Functions Overview
 1. **tstrun(title, ... )**
@@ -65,21 +68,8 @@ If you want to use `tst`, just include `tst.h` and you're ready to write your te
      ```c
      tstnote("Note: This test is pivotal for module X integrity.");
      ```
-
-7. **tstgroup( ... ) / testsection( ...)**
-   - **Purpose**: Contains a set of tstsections to be executed one after the other with a common setup and cleanup code.
-   - **Example**:
-     ```c
-     tstgroup("Perform sequence of tests") {
-        // Setup code
-        a = 3;
-        tstsection("First test") {
-          tst                        
-        }
-     }
-     ```
    
-## Comprehensive Example
+## Minimal Example
 ```c
 #include "tst.h"  // Ensure the tst framework is included
 
@@ -119,30 +109,24 @@ to execute all the tests.
 
 ## Test Results:
 ```
-FILE ▷ tst_test.c "Primary Test Suite"
-CASE┬── Equality Checks 1, 1 » tst_test.c:12
-PASS│  1 == 1 » tst_test.c:13
-FAIL├┬ 1 != 1 » tst_test.c:14
-    │╰ Failed on purpose
-    ╰── 1 KO | 1 OK | 0 SKIP
-CASE┬── Time Complexity Analysis » tst_test.c:17
-CLCK│⚑ 0.001000 ms. Check counting time » tst_test.c:18
-    ╰── 0 KO | 0 OK | 0 SKIP
-CASE┬── Grouped Checks: Edge Cases » tst_test.c:25
-SKIP├┬ 1 == 2 » tst_test.c:26
-    │╰ Inequality
-PASS│  1 != 2 » tst_test.c:31
-PASS│  0 < 1 » tst_test.c:32
-PASS│  1 >= 1 » tst_test.c:33
-    ╰── 0 KO | 2 OK | 1 SKIP
-DATA│ ▽▽▽ Useful Debug Data » tst_test.c:37
-
-MYDATA MYDATA MYDATA MYDATA MYDATA
- MYDATA MYDATA MYDATA MYDATA 
-``````
-DATA│ △△△
-NOTE 🗎 Testing Complete. Review for any FAIL flags. » tst_test.c:41
-RSLT ▷ 1 KO | 3 OK | 1 SKIP
+------ FILE ▷ tst_test.c "Primary Test Suite"
+    12 CASE┬── Equality Checks 1, 1
+    13 PASS│  1 == 1
+    14 FAIL├┬ 1 != 1
+           │╰ Failed on purpose
+    12     ╰── 1 KO | 1 OK | 0 SKIP
+    17 CASE┬── Time Complexity Analysis
+    18 CLCK│⚑ 0.001000 ms. Check counting time
+    17     ╰── 0 KO | 0 OK | 0 SKIP
+    25 CASE┬── Grouped Checks: Edge Cases
+    26 SKIP├┬ 1 == 2
+           │╰ Inequality
+    31 PASS│  1 != 2
+    32 PASS│  0 < 1
+    33 PASS│  1 >= 1
+    25     ╰── 0 KO | 2 OK | 1 SKIP
+    41 NOTE 🗎 Testing Complete. Review for any FAIL flags.
+^^^^^^ RSLT ▷ 1 KO | 3 OK | 1 SKIP
 ```
 ## Temporary disabling
 There are cases when you want to switch off a test case, a check, a group, and so on. For cases like these, you just add an underscore after `tst`. 
@@ -334,40 +318,6 @@ so that it will always return 0.
 
 By setting up a dedicated `test` directory and leveraging the provided `makefile`, you can effortlessly manage and run unit tests using the `tst` framework. This structure not only ensures a clean project layout but also streamlines the testing process, making it easier for developers to maintain and expand upon their test suites.
 
-## Filename path
-By default only the source file name is printed in the log. For example:
-
-```
-PASS│  1 == 1 » t_tst00.c:16
-```
-
-If you want, instead, to have the full path printed, like in:
-```
-PASS│  1 == 1 » test/t_tst00.c:16
-```
-
- you can define the `TSTFULLPATH` symbol before including `tst.h`:
-```c
-  #define TSTFULLPATH
-  #include "tst.h"
-```
-or using `make`'s options:
-```bash
-  make TSTFULLPATH=1 test/t_tst00
-```
-or compiler's options:
-```bash
-  gcc -DTSTFULLPATH -o test/t_tst00 test/t_tst00.c
-```
-
-## Split tests
-Usually the `tstcheck()` function is enough to handle the test results but there might be cases when you want to perform some more actions depending on the fact that the test passed or not.
-
-For this there are three functions:
-
-- `tst()` Just perform the test.
-- `tstpassed()` Returns true if the previous test check (with `tst()` or `tstcheck()`) passed.
-- `tstfailed()` Returns true if the previous test check (with `tst()` or `tstcheck()`) failed.
 
 ## Conclusion
 `tst` offers a user-friendly syntax to facilitate streamlined testing without exhaustive setup or dependencies. Developers may swiftly integrate, run, and diagnose tests, ensuring the robustness and reliability of their C code.

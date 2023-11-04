@@ -5,19 +5,22 @@
 
 tstrun("Switching groups on and off",NoDB, FileOnly, SimpleRun)
 {
-  tstif(tsttag(NoDB) && !tsttag(SimpleRun)) {
+  tstskipif(tsttag(NoDB) && !tsttag(SimpleRun)) {
      tstnote("NoDB && !SimpleRun 1");
+     tstcheck("Test 1 (NoDB && !SimpleRun)")
   } 
 
   tsttag(SimpleRun,0); // Disable SimpleRun
 
-  tstif(tsttag(NoDB) && !tsttag(SimpleRun)) {
+  tstskipif(tsttag(NoDB) && !tsttag(SimpleRun)) {
      tstnote("NoDB && !SimpleRun 2");
+     tstcheck("Test 2 (NoDB && !SimpleRun)")
   } 
  
   tsttag(SimpleRun,1); // Re-enable SimpleRun
 
-  tstif(tsttag(NoDB) && !tsttag(SimpleRun)) {
+  tstskipif(tsttag(NoDB) && !tsttag(SimpleRun)) {
      tstnote("NoDB && !SimpleRun 2");
-  } 
+     tstcheck("Test 3 (NoDB && !SimpleRun)")
+  }  
 }

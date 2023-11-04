@@ -128,7 +128,6 @@ the program as there's little meaning in continue testing when the memory is exa
 Read the section on conditional execution to better handle failure cases that are not
 critical and would allow other tests to be executed.
 
-
 ## On the expression to check
 
 The example above gives us the opportunity to talk about the expressions used in the 
@@ -381,25 +380,21 @@ Let's say that you have a set of tests that use a DB but currently you
 can't get access to it. It would be useless to perform them, and you would
 want to skip them and execute the other ones.
 
-For cases like this you can rely on `tstif()`:
+For cases like this you can rely on `tstskipif()`:
 
 ``` C
   tstcase("Read from FILE") {
     FILE *f = NULL;
 
     tstcheck(f = fopen("datafile.dat",rb), "Unable to open data file");
-    tstif(f,"Skipping file tests") {
+    tstskipif(f == NULL) {
       // A bunch of checks that should read from the file
-    } else {
-      // Alterantive checks (or some other appropriate action)
-    }
+      // They will be skipped the f == NULL
+    } 
   }
 ```
 
-You might have achieved the same result using a simple `if` but using
-`tstif`, instead, will report in the log the fact that you skipped a group of tests.
-
-The `testif` function is also the basis for handling tags. Say you have a set of 
+The `tstskipif` function is also the basis for handling tags. Say you have a set of 
 tests that are very expensive to run (e.g. too slow) and you want to be able to
 exclude them for certain runs. For this you can create up to eight tags per
 run and switch them on/off.
@@ -411,21 +406,20 @@ to the `tstrun()` function and check them with the `tsttag()` function:
 tstrun("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
 {
   tstcase() {
-    tstif(tsttag(TestDB) && !tsttag(SimpleRun)) {
+    tstskipif(!tsttag(TestDB) || tsttag(SimpleRun)) {
        // Only if TestDB is enabled and SimpleRun is disabled.
        tstcheck(db.connection != NULL);
     }
-    tstcheck(4 > p);
   }
 
   // You can enclose full testcases if you want!
-  tstif(tsttag(DeepTest)) {
+  tstskipif(!tsttag(DeepTest)) {
      testcase("Full tests") {
         // Many checks here
      }
 
      testcase("Full tests twice") {
-        // checks here
+        // Even more checks here
      }
   }
 }
@@ -459,18 +453,29 @@ You can also set the tag on and off in the code using the `tsttag()` function:
   tsttag(SimpleRun, 1); // Re-enable the testst guarded by the SimpleRun tag
 ```
 
-As an added bonus you can use `else` to perform action to replace a skipped 
-section of tests:
+## Split tests
+Usually the `tstcheck()` function is enough to handle the test results but there might be cases when you want to perform some more actions depending on the fact that the test passed or not.
 
+For this there are the following functions:
+
+- `tst()` Just perform the test.
+- `tstpassed()` Returns true if the previous test check (with `tst()` or `tstcheck()`) passed.
+- `tstfailed()` Returns true if the previous test check (with `tst()` or `tstcheck()`) failed.
+- `tstskipped()` Returns true if the previous test check (with `tst()` or `tstcheck()`) had been skipped.
+
+Example:
 ```C
-  tstcase("Alternatives") {
-    tstif(tsttag(DeepTest)) {
-      // Some very expensive tests
-    } else {
-      // some lighter test
-    }
-  }
+   tstcheck(x != 3); // Perform the test
+   if (tstpassed()) {
+      // Do domething
+   }
+
+   tst(z > 0); // Perform the test but does not report it in the log
+   if (tstfailed()) {
+
+   }
 ```
+Note that `tstpassed()` and `tstfailed()` report the result of the latest check.
 
 
 [Home](Readme.md#top)
