@@ -3,6 +3,8 @@
 
 #include "tst.h"
 
+#define datasize(t) (int)(sizeof(t)/sizeof(t[0]))
+
 int f(int n, const char *s) {
   return 1;
 }
@@ -16,35 +18,27 @@ tstrun("Data driven tests") {
              { 93, "topolino"}
     };
 
-    tstdatafor("Verify edge cases") {
-      tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
-      tstcheck(f(tstcurdata.n , tstcurdata.s));
+    for(int k =0; k < datasize(tstdata) ; k++) {
+      tstnote("Checking <%d,%s>",tstdata[k].n,tstdata[k].s);
+      tstcheck(f(tstdata[k].n , tstdata[k].s));
     }
   }
 
-  tstcase("A static integer array") {
+  tstcase("A static integer array in the range [-10 10]") {
     int tstdata[] = {-1,3,4,5};
-    tstdatafor("Integers in the range [-10 10]") {
-      tstnote("Checking: %d", tstcurdata);
-      tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
+    for(int k=0; k < datasize(tstdata); k++) {
+      tstnote("Checking: %d", tstdata[k]);
+      tstcheck (-10 <= tstdata[k] && tstdata[k] <= 10);
     }
   }
 
-  tstcase("A random integer array") {
+  tstcase("A random integer array in the range [-10 10]") {
     srand(time(0));
     int tstdata[4]; // array size must be specified
     for (int k=0; k<4; k++) tstdata[k] = 8-(rand() & 0x0F);
-    tstdatafor("Integers in the range [-10 10]") {
-      tstnote("Checking: %d", tstcurdata);
-      tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
+    for(int k=0; k < datasize(tstdata); k++) {
+      tstnote("Checking: %d", tstdata[k]);
+      tstcheck (-10 <= tstdata[k] && tstdata[k] <= 10);
     }
   }
-
-  tstcase("No data!") {
-    tstdatafor("Not sure what") {
-      tstnote("Checking: %d", tstcurdata);
-      tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
-    }
-  }
-
 }
