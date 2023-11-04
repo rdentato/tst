@@ -2,7 +2,13 @@
 # Tutorial
 
 Following the examples of other testing framework, this tutorial wiil guide you through the setup
-and the first steps to use `tst`.
+and the steps need to use `tst`.
+
+A word of caution. The functions offered here are simple but rather flexible and allow you to 
+create very complicated and intricated test cases. Please don't! Besides its purpose of ensuring
+the correctness of the system, the test suite also has a great value as an example on how to use
+the various functions. Try to write the tests as cleanly and simply as possible and you'll save 
+the day of those that will have to understand the code later.
 
 **Contents**<br>
 [Setting tst up](#setting-`tst`-up)<br>
@@ -111,6 +117,18 @@ not obviuos why.
 Of course, when the message is there I'd leave it for the next run; there's no need
 to remove it.
 
+## Assertion
+Assertions are a stronger form of checking. For example, if the following test fails:
+
+```C
+tstassert(ptr = malloc(n),"Out of memory (requested: %d)",n);
+```
+the program as there's little meaning in continue testing when the memory is exausted.
+
+Read the section on conditional execution to better handle failure cases that are not
+critical and would allow other tests to be executed.
+
+
 ## On the expression to check
 
 The example above gives us the opportunity to talk about the expressions used in the 
@@ -165,13 +183,13 @@ FAIL├┬ "Starship orbit intersection" && (n == 0) :35
 ```
 Which contains a clear indication on what the test was about.
 
-## Structuring tests 
+## Structuring tests using `tstcase`
 
 Within a test run, which is supposed to cover a logically meaniful scenario, you 
 may want to define multiple *test cases* whose checks are tightely related.
 
 The usefulness of `tstcase` is that it collects partial results and will allow you
-to focus on sets of tests rather than having to consider all the tests at once.
+to focus on groups of tests rather than having to consider all the tests at once.
 
 For example, let's write a full test run for a more complete version of the factorial:
 
@@ -224,14 +242,146 @@ PASS│  (fact(21) == 0) && (errno == ERANGE) :22
 RSLT ▷ 0 KO | 8 OK | 0 SKIP
 ```
 
-While it is possible to nest test cases, it would be much clearer to 
-just write test cases one after the other.
+While it is possible to nest test cases, it's better not doing it for
+the sake of clarity.
+
+## Sections
+
+Within a `tstcase` you may have multiple `tstsection`s.:
+
+```C
+tstcase("Sections") {
+  int a;
+  a = 5;
+  tstsection("Change to 9") {
+    tstcheck(a == 5);
+    a = 9;
+    tstcheck(a == 9);
+  }
+  tstsection("Change to 8") {
+    tstcheck(a == 5);
+    a = 8;
+    tstcheck(a == 8);
+  }
+  tstcheck(a != 5);
+}
+```
+
+All the tests above will pass. When a section is executed, all the subsequent sections
+are ignored. Then the  testcase is re-executed for the next section and so on.
+
+This can be useful if you want to ensure that groups of tests are executed starting 
+from the same program status. Let's give another example:
+
+```C
+
+tstcase("Testing from file") {
+
+   FILE *f = NULL;
+
+   tstassert(f == NULL)
+   tstassert(f = fopen("mydata file","rb"));
+
+   tstsection ("First five are uppercase") {
+    int c;
+    for (int k=0; k<5; k++) {
+      tstcheck( isupper(c=fgetc(f)),"Not an uppercase letter '%c'",c);
+    }
+   }
+
+   tstsection ("First five are in ascending order") {
+    int c=0,prev=0;
+    for (int k=0; k<5; k++) {
+      tstcheck( (c = fgetc(f)) >= prev, "Letter %c in position %d not ordered",c,k);
+      prev = c;
+    }
+   }
+
+   fclose(f);
+   f = NULL;
+}
+
+```
+Before each `tstsection` is executed, the file will be opened and after the `tstsection`
+has been completed, the file is closed. 
+
+You can imagine much more complex scenarios involving, for example, allocate and free memory
+with `malloc()`/`free()`, or connecting to a Database or to a network server.
+
+
+## Data driven tests
+
+Another feature of `tstsection`s is that they can be executed on a given array of data.
+You define an array named `tstdata` within your `tstcase` andaccess the current data
+element with `tstcurdata`. For example:
+
+``` C
+  tstcase("Data as static array") {
+
+    struct {int n; char *s;} tstdata[] = {
+             {123, "pippo"},
+             {431, "pluto"},
+             { 93, "topolino"}
+    };
+
+    tstsection("My check") {
+      tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
+      tstcheck(f(tstcurdata.n , tstcurdata.s));
+    }
+  }
+```
+
+Note that, considering how `tstsection`s are executed, you can do something like this:
+
+``` C
+  tstcase("Data as static array") {
+
+    struct {int n; char *s;} tstdata[] = {
+             {123, "pippo"},
+             {431, "pluto"},
+             { 93, "topolino"}
+    };
+
+    tstsection("First check") {
+      tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
+      tstcheck(first_check(tstcurdata.n , tstcurdata.s));
+    }
+
+    tstsection("Second check") {
+      tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
+      tstcheck(second_check(tstcurdata.n , tstcurdata.s));
+    }
+  }
+```
+
+This can also be used for *fuzzing* (i.e. execute many tests with random data):
+
+``` C
+  tstcase("Data as static array") {
+
+    int tstdata[4];
+    
+    for(int cycle = 0; cycle < 100; cycle++) { // Do it 100 times
+
+      for (int k=0; k<4; k++)
+        tstdata[k] = 8-(rand() & 0x0F);  // Generate some random data
+
+      // Execute the section once for each element in the tstdata array
+      tstsection("First check") {
+        tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
+        tstcheck(first_check(tstcurdata.n , tstcurdata.s));
+      }
+    }
+  }
+```
 
 ## Conditional test execution (and tagging)
 
-Let's say that you just have a set of tests to perform that use a DB but you
-can't get access to it. It would be useless to perform them, for cases like this
-you can rely on `tstif()`:
+Let's say that you have a set of tests that use a DB but currently you
+can't get access to it. It would be useless to perform them, and you would
+want to skip them and execute the other ones.
+
+For cases like this you can rely on `tstif()`:
 
 ``` C
   tstcase("Read from FILE") {
@@ -241,10 +391,14 @@ you can rely on `tstif()`:
     tstif(f,"Skipping file tests") {
       // A bunch of checks that should read from the file
     } else {
-      // Alterantive checks (or any appropriate action)
+      // Alterantive checks (or some other appropriate action)
     }
   }
 ```
+
+You might have achieved the same result using a simple `if` but using
+`tstif`, instead, will report in the log the fact that you skipped a group of tests.
+
 The `testif` function is also the basis for handling tags. Say you have a set of 
 tests that are very expensive to run (e.g. too slow) and you want to be able to
 exclude them for certain runs. For this you can create up to eight tags per
@@ -267,7 +421,7 @@ tstrun("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
   // You can enclose full testcases if you want!
   tstif(tsttag(DeepTest)) {
      testcase("Full tests") {
-        // checks here
+        // Many checks here
      }
 
      testcase("Full tests twice") {
@@ -318,32 +472,5 @@ section of tests:
   }
 ```
 
-## Data driven tests
-
-It might be useful to repeatedly perform a set of tests on a given set of data.
-
-While other frameworks have specialized functions for this, to keep things as 
-simple as possible, `tst` relies on pure C.
-
-This is an example on how to do it (note the helper macro `datasize` to
-calculate the number of elements in the array):
-
-``` C
-  #define datasize(t) (int)(sizeof(t)/sizeof(t[0]))
-
-  tstcase("Use static data") {
-
-    struct {int n; char *s;} data[] = {
-             {123, "pippo"},
-             {431, "pluto"},
-             { 93, "topolino"}
-    };
-
-    for(int k=0; k< datasize(data); k++) {
-      tstnote("Checking <%d,%s>",data[k].n,data[k].s);
-      tstcheck(f(data[k].n , data[k].s));
-    }
-  }
-```
 
 [Home](Readme.md#top)
