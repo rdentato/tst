@@ -20,7 +20,9 @@ static          short tst_result = 0;
 static int tst_pass = 0; // A test run can have up to 2 Billions checks!
 static int tst_fail = 0;
 static int tst_skip = 0;
-static const char* tst_title;
+static const char* tst_title = NULL;
+static clock_t tstelapsed = 0;
+static volatile const char *tst_clock_unit="?";
 
 #define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
 #define tst__argn(...)  tst__cnt(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
@@ -98,48 +100,44 @@ static inline int tstfailed() {return !tst_result;}
 static inline int tstpassed() {return  tst_result;}
 
 // This is only used to avoid that the compiler complaining about unused static variables.
-#define tst_usestatic ((tst_result | tst_case_pass | tst_case_fail | tst_case_skip) & tstdata_[0] & tst_case_data[0])
+#define tst_usestatic (((tst_result | tst_case_pass | tst_case_fail | tst_case_skip) & tst_case_data[0])*((int)tstelapsed))
 
 #ifndef TST_STR_COMPACT
-  const char *TST_STR_PASS     = "PASS│  ";
-  const char *TST_STR_FAIL_1   = "FAIL│  ";
-  const char *TST_STR_FAIL     = "FAIL├┬ ";
-  const char *TST_STR_FAIL_2ND = "    │╰";
-  const char *TST_STR_SKIP     = "SKIP├┬ %s";
-  const char *TST_STR_SKIP_2ND = "    │╰";
-  const char *TST_STR_CASE     = "CASE┬── ";
-  const char *TST_STR_CASE_END = "    ╰── %d KO | %d OK | %d SKIP\n";
-  const char *TST_STR_FILE     = "FILE ▷";
-  const char *TST_STR_FILE_END = "RSLT ▷ %d KO | %d OK | %d SKIP\n";
-  const char *TST_STR_CLCK     = "CLCK⚑  %f ms. ";
-  const char *TST_STR_NOTE     = "NOTE: ";
-  const char *TST_STR_GRUP     = "GRUP├┬─";
-  const char *TST_STR_GRUP_END = "    │└─";
-  const char *TST_STR_DATA     = "DATA├┬─";
-  const char *TST_STR_DATA_END = "    │└─";
-  const char *TST_STR_SCTN     = "SCTN├┬─";
-  const char *TST_STR_SCTN_END = "    │└─";
-  const char *TST_STR_LINE     = " :%d\n";
+  #define TST_STR_PASS      "PASS│  "
+  #define TST_STR_FAIL_1    "FAIL│  "
+  #define TST_STR_FAIL      "FAIL├┬ "
+  #define TST_STR_FAIL_2ND  "    │╰"
+  #define TST_STR_SKIP      "SKIP├┬ %s"
+  #define TST_STR_SKIP_2ND  "    │╰"
+  #define TST_STR_CASE      "CASE┬── "
+  #define TST_STR_CASE_END  "    ╰── %d KO | %d OK | %d SKIP\n"
+  #define TST_STR_FILE      "FILE ▷"
+  #define TST_STR_FILE_END  "RSLT ▷ %d KO | %d OK | %d SKIP\n"
+  #define TST_STR_CLCK      "CLCK⚑  %ld %ss "
+  #define TST_STR_NOTE      "NOTE: "
+  #define TST_STR_GRUP      "GRUP├┬─"
+  #define TST_STR_GRUP_END  "    │└─"
+  #define TST_STR_SCTN      "SCTN├┬─"
+  #define TST_STR_SCTN_END  "    │└─"
+  #define TST_STR_LINE      " :%d\n"
 #else
-  const char *TST_STR_PASS     = "P ";
-  const char *TST_STR_FAIL_1   = "F ";
-  const char *TST_STR_FAIL     = "F ";
-  const char *TST_STR_FAIL_2ND = "f";
-  const char *TST_STR_SKIP     = "S %s";
-  const char *TST_STR_SKIP_2ND = "s";
-  const char *TST_STR_CASE     = "C ";
-  const char *TST_STR_CASE_END = "c %d %d %d\n";
-  const char *TST_STR_FILE     = "R";
-  const char *TST_STR_FILE_END = "r %d %d %d\n";
-  const char *TST_STR_CLCK     = "T %f ";
-  const char *TST_STR_NOTE     = "N ";
-  const char *TST_STR_GRUP     = "G";
-  const char *TST_STR_GRUP_END = "g";
-  const char *TST_STR_DATA     = "D";
-  const char *TST_STR_DATA_END = "d";
-  const char *TST_STR_SCTN     = "(";
-  const char *TST_STR_SCTN_END = ")";
-  const char *TST_STR_LINE     = ":\xF%d\n";
+  #define TST_STR_PASS      "P "
+  #define TST_STR_FAIL_1    "F "
+  #define TST_STR_FAIL      "F "
+  #define TST_STR_FAIL_2ND  "f"
+  #define TST_STR_SKIP      "S %s"
+  #define TST_STR_SKIP_2ND  "s"
+  #define TST_STR_CASE      "C "
+  #define TST_STR_CASE_END  "c %d %d %d\n"
+  #define TST_STR_FILE      "R"
+  #define TST_STR_FILE_END  "r %d %d %d\n"
+  #define TST_STR_CLCK      "T %ld %ss "
+  #define TST_STR_NOTE      "N "
+  #define TST_STR_GRUP      "G"
+  #define TST_STR_GRUP_END  "g"
+  #define TST_STR_SCTN      "("
+  #define TST_STR_SCTN_END  ")"
+  #define TST_STR_LINE      "\xF:%d\n"
 #endif
 
 #define tst_prtf(...) \
@@ -164,6 +162,9 @@ static inline int tstpassed() {return  tst_result;}
     tst_title = title_; \
     int report_err = 1; \
     report_err = tst_parsetags(argc,argv); \
+    if (CLOCKS_PER_SEC == ((clock_t)1000000000)) tst_clock_unit = "n"; \
+    else if(CLOCKS_PER_SEC == ((clock_t)1000000)) tst_clock_unit = "µ"; \
+    else if(CLOCKS_PER_SEC == ((clock_t)1000)) tst_clock_unit = "m"; \
     fprintf(stderr, "%s %s \"%s\"%s\n", TST_STR_FILE, __FILE__, tst_title, (tst_?"":" (disabled)"));\
     if (tst_) tst__run(tst_usestatic); \
     fprintf(stderr,TST_STR_FILE_END, tst_fail, tst_pass, tst_skip);\
@@ -173,6 +174,7 @@ static inline int tstpassed() {return  tst_result;}
 #define tstrun(title_,...)  tstrun_((!tst_zero), title_, __VA_ARGS__)
 #define tst_run(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
 
+// This is needed to allow usage of tstcheck outside a tstcase block.
 static volatile unsigned short tst_case_data[4] = {0};
 
 #define tst_case_pass tst_case_data[1]
@@ -187,43 +189,33 @@ static volatile unsigned short tst_case_data[4] = {0};
 #define tstif(tst_,...) \
    if ((tst_) || (tst_prtf(TST_STR_SKIP, #tst_), fputs(TST_STR_SKIP_2ND, stderr), fprintf(stderr," " __VA_ARGS__), fputc('\n',stderr), ++tst_skip, ++tst_case_skip, tst_zero=0)) 
 
+#define tstelapsed() tstelapsed
 #define tstclock(...) \
    for(clock_t clk = clock(); \
        clk; \
-       clk = clock()-clk,fprintf(stderr, TST_STR_CLCK, ((double)clk)/((double)(CLOCKS_PER_SEC/1000))), clk=tst_prtf(__VA_ARGS__))
+       tstelapsed = clock()-clk, fprintf(stderr, TST_STR_CLCK, tstelapsed, tst_clock_unit), clk=tst_prtf(__VA_ARGS__))
 
 #define tstnote(...) (fputs(TST_STR_NOTE,stderr), tst_prtf( __VA_ARGS__))
-
-static volatile unsigned short  tstdata[]={0};
-static volatile unsigned short *tstdata_=tstdata;
 
 #define tst_sect_iterator  tst_vars[0]
 #define tst_sect_counter   tst_vars[1]
 #define tst_sect_executed  -2
 
 #define tstgroup(...) if (fputs(TST_STR_GRUP,stderr), tst_prtf(" " __VA_ARGS__)) ; \
-                      else for (short tst_vars[4] = {0, tst_sect_executed, 1, 0}; \
+                      else for (short tst_vars[2] = {0, tst_sect_executed}; \
                                 ((tst_sect_counter == tst_sect_executed) && (tst_sect_counter = -1)) || tst_prtf("%s",TST_STR_GRUP_END); \
                                 tst_sect_iterator += 1)
 
-#define tstsection(...)        if (!(   (tst_sect_counter != tst_sect_executed) \
-                                     && (++tst_sect_counter == tst_sect_iterator) \
-                                     && (tst_sect_counter = tst_sect_executed) \
-                                     && !(fputs(TST_STR_SCTN,stderr), tst_prtf(" " __VA_ARGS__)))) ;\
-                               else 
-
-#define tst_data_max (sizeof(tstdata)/sizeof(tstdata[0]))
-#define tstcurdata tstdata[tst_data_cur]
-
-#define tstdatafor(...) if (((void *)tstdata == (void *)tstdata_) || (fputs(TST_STR_DATA,stderr), tst_prtf(" " __VA_ARGS__))) ; \
-                        else for (int tst_data_cur = 0; \
-                                  (tst_data_cur < (int)tst_data_max) || tst_prtf("%s",TST_STR_DATA_END); \
-                                  tst_data_cur++) 
+#define tstsection(...)    for (int tst_sect = 1; \
+                                tst_sect && (tst_sect_counter != tst_sect_executed) \
+                                         && (++tst_sect_counter == tst_sect_iterator) \
+                                         && !(fputs(TST_STR_SCTN,stderr), tst_prtf(" " __VA_ARGS__)); \
+                                tst_sect = 0, tst_sect_counter = tst_sect_executed, tst_prtf("%s",TST_STR_SCTN_END))
+                               
 
 #define tst_check(...)
 #define tst_assert(...)
 #define tst_note(...)
-#define tst_datafor(...)  if (!tst_zero) ; else
 #define tst_case(...)     if (!tst_zero) ; else
 #define tst_if(...)       if (!tst_zero) ; else
 #define tst_section(...)  if (!tst_zero) ; else
