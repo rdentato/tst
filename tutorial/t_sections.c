@@ -4,6 +4,7 @@
 int f(int n, const char *s) {return 1; }// Always pass 
 
 tstrun("Sections") {
+  int count = 0;
   tstcase("Sections") {
     int a;
     a = 5;
@@ -11,13 +12,17 @@ tstrun("Sections") {
       tstcheck(a == 5);
       a = 9;
       tstcheck(a == 9);
+      count++;
     }
     tstsection("Change to 8") {
       tstcheck(a == 5);
       a = 8;
       tstcheck(a == 8);
+      count++;
     }
-    tstcheck(a != 5);
+    tstcheck( ((count == 1) && (a == 9)) || 
+              ((count == 2) && (a == 8)) ||
+              (a == 5)); 
   }
 
   tstcase("Data diven (static)") {
