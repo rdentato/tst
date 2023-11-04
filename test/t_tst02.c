@@ -7,7 +7,7 @@ tstrun("Sections") {
   tstcase("All sections") {
     int a = -1;
 
-    tstgroup("Keeping 5 starting from %d",a) {
+    tstcase("Keeping 5 starting from %d",a) {
       
       tstnote("Performing setup with a = %d",a);
       tstcheck(a==-1);
@@ -32,10 +32,10 @@ tstrun("Sections") {
     tstcheck(a==-1);
   }
 
-  tst_case("No sections") {
+  tstcase("No sections") {
     int a = -1;
 
-    tstgroup("Empty") {
+    tstcase("Empty") {
       a = 5;
       tstcheck(a==5);
 
@@ -45,10 +45,10 @@ tstrun("Sections") {
     tstcheck(a==0);
   }
 
-  tst_case("Nested sections") {
+  tstcase("Nested sections") {
     int a = -1;
 
-    tstgroup("keep 100") {
+    tstcase("keep 100") {
 
       a = 5;
       tstcheck(a==5);
@@ -59,7 +59,7 @@ tstrun("Sections") {
       }
 
       tstsection("Set to 100") {
-        tstgroup("keep a = %d",a) {
+        tstcase("keep a = %d",a) {
           a = 100;
    
           tstsection("Set to 200") {
