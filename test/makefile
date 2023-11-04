@@ -21,7 +21,8 @@ TESTS_SRC_C=$(wildcard t_*.c)
 TESTS_C=$(TESTS_SRC_C:.c=)
 
 ifneq ($(CXX_AVAILABLE),)
-  TESTS_SRC_CPP=$(wildcard t_*.cpp)
+#  TESTS_SRC_CPP=$(wildcard t_*.cpp)
+  TESTS_SRC_CPP := $(addsuffix ++.cpp,$(TESTS_C))
   TESTS_CPP=$(TESTS_SRC_CPP:.cpp=)
 	CXXFLAGS=$(CFLAGS)
 endif
@@ -42,8 +43,18 @@ runtest: all
 	@echo    "SKIP: `grep '^SKIP' test.log | wc -l`"
 	@echo "EXPECTED 4 FAIL HERE △"
 
-#.PRECIOUS: %.o
+.PRECIOUS: %.o
+.PRECIOUS: %++.cpp
+.PRECIOUS: %++
+
+%++.cpp:%.c
+	@echo "#include <iostream>" > $*++.cpp
+	@echo "#include <tst.h>" >> $*++.cpp
+	@cat $*.c >> $*++.cpp
+
+%++:%++.cpp
+	$(CXX) $(CXXFLAGS) -o $*++ $*++.cpp
 
 clean:
-	rm -f $(TESTS) $(TESTS:=.exe) $(TESTS:=.o) test.log
+	rm -f $(TESTS) $(TESTS:=.exe) $(TESTS:=.o) *++.cpp test.log
 
