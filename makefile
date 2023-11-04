@@ -6,3 +6,4 @@ runtest:
 
 clean:
 	cd test; make clean
+	cd tutorial; make clean
