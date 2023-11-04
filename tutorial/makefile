@@ -1,6 +1,9 @@
 #  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 #  SPDX-License-Identifier: MIT
 
+# Uncomment the following line to generate a minimal log.
+# COMPACT="-DTST_STR_COMPACT"
+
 _EXE=.exe
 STATIC=-static
 
@@ -11,7 +14,7 @@ endif
 
 CXX_AVAILABLE := $(shell $(CXX) --version 2>/dev/null)
 
-CFLAGS=-O2 -Wall -I../src -I. $(STATIC) -DDEBUG
+CFLAGS=-O2 -Wall -I../src -I. $(STATIC) $(COMPACT) -DDEBUG
 LIBS=
 
 TESTS_SRC_C=$(wildcard t_*.c)
@@ -37,7 +40,7 @@ runtest: all
 	@echo -n "LOG: test.log  FAIL: `grep '^FAIL' test.log | wc -l` "
 	@echo -n "PASS: `grep '^PASS' test.log | wc -l`  "
 	@echo    "SKIP: `grep '^SKIP' test.log | wc -l`"
-	@echo "EXPECTED 1 FAIL HERE △"
+	@echo "EXPECTED 2 FAIL HERE △"
 
 MAKEFLAGS += --no-builtin-rules
 

@@ -245,12 +245,13 @@ you can rely on `tstif()`:
     }
   }
 ```
-The `testif` function is also the basis for create tags. Say you have a set of 
+The `testif` function is also the basis for handling tags. Say you have a set of 
 tests that are very expensive to run (e.g. too slow) and you want to be able to
-exclude them. For this you can create up to eight tags per run and switch them
-on/off.
+exclude them for certain runs. For this you can create up to eight tags per
+run and switch them on/off.
 
-To check if a *tag* is enabled, you use the `tsttag()` function:
+You specify the tags you want to use (up to eight) as additional parameter
+to the `tstrun()` function and check them with the `tsttag()` function:
 
 ```C
 tstrun("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
@@ -304,59 +305,43 @@ You can also set the tag on and off in the code using the `tsttag()` function:
   tsttag(SimpleRun, 1); // Re-enable the testst guarded by the SimpleRun tag
 ```
 
+As an added bonus you can use `else` to perform action to replace a skipped 
+section of tests:
 
+```C
+  tstcase("Alternatives") {
+    tstif(tsttag(DeepTest)) {
+      // Some very expensive tests
+    } else {
+      // some lighter test
+    }
+  }
+```
 
 ## Data driven tests
 
 It might be useful to repeatedly perform a set of tests on a given set of data.
 
-For this you can use the `tstdata` functions.
+While other frameworks have specialized functions for this, to keep things as 
+simple as possible, `tst` relies on pure C.
 
-This is an example on how to do it:
+This is an example on how to do it (note the helper macro `datasize` to
+calculate the number of elements in the array):
 
 ``` C
+  #define datasize(t) (int)(sizeof(t)/sizeof(t[0]))
+
   tstcase("Use static data") {
 
-    struct {int n; char *s;} tstdata[] = {
+    struct {int n; char *s;} data[] = {
              {123, "pippo"},
              {431, "pluto"},
              { 93, "topolino"}
     };
 
-    tstdatafor("Verify edge cases") {
-      tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
-      tstcheck(f(tstcurdata.n , tstcurdata.s));
-    }
-  }
-```
-
-You first define the `tstdata` array and then use `tstdatafor()` to loop over the array.
-To access the current element of the array, you use `tstcurdata`.
-
-You are free to choose whatever type suits you most for the array. It can be a `struct` as in 
-the example above or could be a basic type like an int:
-
-```c
-  tstcase("A static integer array") {
-    int tstdata[] = {-1,3,4,5};
-    tstdatafor("Integers in the range [-10 10]") {
-      tstnote("Checking: %d", tstcurdata);
-      tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
-    }
-  }
-```
-
-This is very helpful if you want to extract a sample of the test data from a database or
-just randomly generate them like in this example:
-
-```c
-  tstcase("A random integer array") {
-    srand(time(0));
-    int tstdata[4]; // array size must be specified
-    for (int k=0; k<4; k++) tstdata[k] = 8-(rand() & 0x0F);
-    tstdatafor("Integers in the range [-10 10]") {
-      tstnote("Checking: %d", tstcurdata);
-      tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
+    for(int k=0; k< datasize(data); k++) {
+      tstnote("Checking <%d,%s>",data[k].n,data[k].s);
+      tstcheck(f(data[k].n , data[k].s));
     }
   }
 ```
