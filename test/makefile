@@ -1,6 +1,9 @@
 #  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 #  SPDX-License-Identifier: MIT
 
+# Uncomment the following line to generate a minimal log.
+# COMPACT="-DTST_STR_COMPACT"
+
 _EXE=.exe
 STATIC=-static
 
