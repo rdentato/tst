@@ -44,7 +44,8 @@ static volatile const char *tst_clock_unit="?";
 #define tst_tags_8(_0,_1,_2,_3,_4,_5,_6,_7)    tst_tags__(7,_1,_2,_3,_4,_5,_6,_7,_8) 
 #define tst_tags_9(_0,_1,_2,_3,_4,_5,_6,_7,_8) tst_tags__(8,_1,_2,_3,_4,_5,_6,_7,_8) 
 
-static unsigned char tst_tags_val = 0xFF;
+// All tags are "off" by defaults
+static unsigned char tst_tags_val = 0x00;
 
 #define tsttag(...) tst_vrg(tsttag_,__VA_ARGS__)
 #define tsttag_1(t_) (!!((tst_tag_ ## t_) & tst_tags_val))
@@ -77,7 +78,7 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
       arg = argv[n];
       v = 0xFF;
       if (*arg == '-') {arg++; v=0x00;}
-      if (*arg == '+') {arg++;}
+      if (*arg == '+') {arg++; v=0xFF;}
       
       if (*arg == '*') {tst_tags_val = v; continue;}
       if (*arg == '\0') continue;

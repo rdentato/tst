@@ -12,6 +12,7 @@ _EXE=
 STATIC=
 endif
 
+# Comment the following line if you don't want to compile with C++
 CXX_AVAILABLE := $(shell $(CXX) --version 2>/dev/null)
 
 CFLAGS=-O2 -Wall -I../src -I. $(STATIC) $(COMPACT) -DDEBUG
