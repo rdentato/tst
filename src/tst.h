@@ -206,8 +206,8 @@ static unsigned short tst_vars[6] = {0};
 
 #define tst_sect_iterator  tst_vars[0]
 #define tst_sect_counter   tst_vars[1]
-#define tst_sect_executed  -2
-#define tst_sect_not_last  -3
+#define tst_sect_not_last  -2
+#define tst_sect_last      -3
 
 #define tst_case_pass tst_vars[2]
 #define tst_case_fail tst_vars[3]
@@ -215,17 +215,17 @@ static unsigned short tst_vars[6] = {0};
 
 #define tstcase(...) \
    if (tst_prtln(TST_STR_CASE), tst_prtf(" " __VA_ARGS__)) ; \
-   else for (short tst_vars[6] = {0, tst_sect_executed, 0, 0, 0}; \
-             ((tst_sect_counter == tst_sect_executed) && (tst_sect_counter = -1)) || \
+   else for (short tst_vars[6] = {0, tst_sect_not_last, 0, 0, 0, 0}; \
+             ((tst_sect_counter == tst_sect_not_last) && (tst_sect_counter = -1)) || \
                        (tst_prtln(""), tst_prtf(TST_STR_CASE_END, tst_case_fail, tst_case_pass, tst_case_skip)); \
              tst_sect_iterator += 1)
 
 #define tstsection(...) \
               for (int tst_sect = 1; \
-                tst_sect && (tst_sect_counter != tst_sect_executed) \
+                tst_sect && ((tst_sect_counter > tst_sect_not_last) || !(tst_sect_counter = tst_sect_not_last))\
                          && (++tst_sect_counter == tst_sect_iterator) \
                          && !(tst_prtln(TST_STR_SCTN), tst_prtf(" " __VA_ARGS__)); \
-                tst_sect = 0, tst_sect_counter = tst_sect_executed, tst_prtf("      %s",TST_STR_SCTN_END)) \
+                tst_sect = 0, tst_sect_counter = tst_sect_last, tst_prtf("      %s",TST_STR_SCTN_END)) \
                 for (int tst_data_count = 0; tst_data_count < tst_data_size; tst_data_count++) 
                                
 static volatile unsigned short  tstdata[1]={0};
