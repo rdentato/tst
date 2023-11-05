@@ -13,6 +13,12 @@ the day of those that will have to understand the code later.
 **Contents**<br>
 [Setting tst up](#setup)<br>
 [A minimal example](#min-example)<br>
+[Handling failure](#)<br>
+[Assertions](#assertions)<br>
+[On the expression to check](#check-expression)<br>
+[Structuring tests using `tstcase`](#testcase)<br>
+[Sections](#sections)<br>
+[Data driven tests](#data-driven)<br>
 
 <a id=setup></a>
 ## Integrating `tst` into Your Project
@@ -82,6 +88,7 @@ If this is not the case, comment the line that defines the variable `CXX_AVAILAB
 By setting up a dedicated `test` directory and leveraging the provided `makefile`, you can effortlessly manage and run unit tests using the `tst` framework. This structure not only ensures a clean project layout but also streamlines the testing process, making it easier for developers to maintain and expand upon their test suites.
 
 <a id="min-example"></a>
+
 ## A minimal example.
 
 Let's define a scenario for our examples: you have a library of functions defined in file `functions.c`
@@ -120,21 +127,23 @@ Once you compile and link it with the file where the `Factorial()` function is d
 an executable, say `t_fact` that, when runn, will execute all the tests. report the results:
 
 ```
-FILE ▷ t_fact.c "Check Factorial"
-PASS│  fact(1) == 1 :5
-PASS│  fact(2) == 2 :6
-PASS│  fact(3) == 6 :7
-PASS│  fact(5) == 120 :8
-RSLT ▷ 0 KO | 4 OK | 0 SKIP
+------ FILE ▷ t_fact.c "Check Factorial"
+     5 PASS│  fact(1) == 1 :5
+     6 PASS│  fact(2) == 2 :6
+     7 PASS│  fact(3) == 6 :7
+     8 PASS│  fact(5) == 120 :8
+^^^^^^ RSLT ▷ 0 KO | 4 OK | 0 SKIP
 ```
 The idea is to have a single executable file which defines a `run` of tests that will cover a
 logically related set of functions or will go over a specific use case.
 
 The `tstrun()` function will serve as `main()`: you don't need (and should not) define a `main()` function.
 
+<a id="failures"></a>
+
 ## Handling failures
-If you looked at the `fact_0()` function you may have noticed that there is, actually, a bug in it.
-We didn't detected it becauses we failed to check for one of the cases case: 0! = 1.
+If you looked at the `fact_0()` function in the previous section, you may have noticed that there is, actually, a bug in it.
+We didn't detected it becauses we failed to check for one of the edge case: 0! = 1.
 Let's do it:
 
 ```c
@@ -151,13 +160,13 @@ tstrun("Factorials") {
 ```
 We would have got:
 ```
-FILE ▷ t_fact_0_err.c "Check Factorial"
-FAIL│  fact_0(0) == 1 :5
-PASS│  fact_0(1) == 1 :6
-PASS│  fact_0(2) == 2 :7
-PASS│  fact_0(3) == 6 :8
-PASS│  fact_0(5) == 120 :9
-RSLT ▷ 1 KO | 4 OK | 0 SKIP
+------ FILE ▷ t_fact_0_err.c "Check Factorial"
+     5 FAIL│  fact_0(0) == 1
+     6 PASS│  fact_0(1) == 1
+     7 PASS│  fact_0(2) == 2
+     8 PASS│  fact_0(3) == 6
+     9 PASS│  fact_0(5) == 120
+^^^^^^ RSLT ▷ 1 KO | 4 OK | 0 SKIP
 ```
 Note how failures are reported as the first number in the *results* line. That's because,
 most probably, the first thing we want to know if everything went right.
@@ -170,26 +179,30 @@ We can do it as follows:
 ```
 and we would have got:
 ```
-FAIL├┬ fact_0(0) == 1 :5
-    │╰ Expected 1 got 0
+    5 FAIL├┬ fact_0(0) == 1
+          │╰ Expected 1 got 0
 ```
 
-I found it bothersome to specify a message for every check. After all, most of the time
+I find it bothersome to specify a message for every check. After all, most of the time
 the checks will always pass. I usually only add messages when a check fails and it's
 not obviuos why.
 Of course, when the message is there I'd leave it for the next run; there's no need
 to remove it.
 
-## Assertion
+<a id="assertions"></a>
+
+## Assertions
 Assertions are a stronger form of checking. For example, if the following test fails:
 
 ```C
 tstassert(ptr = malloc(n),"Out of memory (requested: %d)",n);
 ```
-the program as there's little meaning in continue testing when the memory is exausted.
+the program will be aborted as there's little meaning in continue testing when the memory is exausted.
 
-Read the section on conditional execution to better handle failure cases that are not
+The section on conditional execution provides more information on how to handle failures that are not
 critical and would allow other tests to be executed.
+
+<a id="check-expression"></a>
 
 ## On the expression to check
 
@@ -204,7 +217,7 @@ Writing:
 
 that, assuming failure, will produce:
 ```
-FAIL│  fact(0) == 1 :5
+    5 FAIL│  fact(0) == 1
 ```
 
 is much better than writing:
@@ -215,11 +228,11 @@ is much better than writing:
 
 that would produce:
 ```
-FAIL│  n == 1 :5
+    5 FAIL│  n == 1
 ```
 with no indication of what the test actually was.
 
-On the other and, when adding the error message you might need to recalculate the
+On the other hand, when adding the error message you might need to recalculate the
 function again which, in some case, might not be advisable.
 
 A simple way to avoid that is to assign the result to a temporary variable directly
@@ -240,10 +253,12 @@ a string to remind what that test was about using this idiomatic form:
 If this fails, it will produce:
 
 ```
-FAIL├┬ "Starship orbit intersection" && (n == 0) :35
-    │╰ Expected 0 got 23
+    35 FAIL├┬ "Starship orbit intersection" && (n == 0) :35
+           │╰ Expected 0 got 23
 ```
-Which contains a clear indication on what the test was about.
+Which contains a clear indication of what the test was about.
+
+<a id="tstcase"></a>
 
 ## Structuring tests using `tstcase`
 
@@ -284,28 +299,32 @@ tstrun("Check Factorial") {
 
 This will produce the following result:
 ```
-FILE ▷ t_fact.c "Check Factorial"
-CASE┬── Edge case: 0 :5
-PASS│  fact(0) == 1 :6
-    ╰── 0 KO | 1 OK | 0 SKIP
-CASE┬── Small input :9
-PASS│  fact(1) == 1 :10
-PASS│  fact(2) == 2 :11
-PASS│  fact(3) == 6 :12
-PASS│  fact(5) == 120 :13
-    ╰── 0 KO | 4 OK | 0 SKIP
-CASE┬── Edge case: largest input :16
-PASS│  fact(12) == 479001600 :17
-    ╰── 0 KO | 1 OK | 0 SKIP
-CASE┬── Out of range :20
-PASS│  (fact(-3) == 0) && (errno == ERANGE) :21
-PASS│  (fact(21) == 0) && (errno == ERANGE) :22
-    ╰── 0 KO | 2 OK | 0 SKIP
-RSLT ▷ 0 KO | 8 OK | 0 SKIP
+----- FILE ▷ t_fact.c "Check Factorial"
+    5 CASE┬── Edge case: 0
+    6 PASS│  fact(0) == 1
+    5     ╰── 0 KO | 1 OK | 0 SKIP
+    9 CASE┬── Small input
+   10 PASS│  fact(1) == 1
+   11 PASS│  fact(2) == 2
+   12 PASS│  fact(3) == 6
+   13 PASS│  fact(5) == 120
+    9     ╰── 0 KO | 4 OK | 0 SKIP
+   16 CASE┬── Edge case: largest input
+   17 PASS│  fact(12) == 479001600
+   16    ╰── 0 KO | 1 OK | 0 SKIP
+   20 CASE┬── Out of range
+   21 PASS│  (fact(-3) == 0) && (errno == ERANGE)
+   22 PASS│  (fact(21) == 0) && (errno == ERANGE)
+   20    ╰── 0 KO | 2 OK | 0 SKIP
+^^^^^ RSLT ▷ 0 KO | 8 OK | 0 SKIP
 ```
-
-While it is possible to nest test cases, it's better not doing it for
+Note that at the end of each `tstcase` the partial results are reported. The line
+number is the same as the starting line of the test case so to make it easier to 
+check which test case is closed.
+Note that, while it is possible to nest test cases, it's better not doing it for
 the sake of clarity.
+
+<a id="sections"></a>
 
 ## Sections
 
@@ -374,7 +393,7 @@ has been completed, the file is closed.
 You can imagine much more complex scenarios involving, for example, allocate and free memory
 with `malloc()`/`free()`, or connecting to a Database or to a network server.
 
-
+<a id="data-driven"></a>
 ## Data driven tests
 
 Another feature of `tstsection`s is that they can be executed on a given array of data.
@@ -443,11 +462,13 @@ This can also be used for *fuzzing* (i.e. execute many tests with random data):
 
 ## Conditional test execution (and tagging)
 
-Let's say that you have a set of tests that use a DB but currently you
-can't get access to it. It would be useless to perform them, and you would
-want to skip them and execute the other ones.
+Let's say you have a set of tests that use a DB but currently you
+can't get access to it. There are other tests in the test suite that you want
+to perform. How can you do it?
 
-For cases like this you can rely on `tstskipif()`:
+For cases like this you can rely on `tstskipif()`. It makes so that if the 
+condition is true, all the tests in its scope will be disabled (and skipped on 
+execution):
 
 ``` C
   tstcase("Read from FILE") {
@@ -458,6 +479,8 @@ For cases like this you can rely on `tstskipif()`:
       // A bunch of checks that should read from the file
       // They will be skipped the f == NULL
     } 
+    
+    // other test cases you do want to execute regardless.
   }
 ```
 

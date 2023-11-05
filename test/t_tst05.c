@@ -7,7 +7,7 @@ tstrun("Switching groups on and off",NoDB, FileOnly, SimpleRun)
 {
   tstcheck("Test NoDB 0 (always)");
 
-  tstskipif(!tsttag(NoDB)) {
+  tstskipif(tsttag(NoDB)) {
     tstcheck("Test NoDB 1");
     tstcheck("Test NoDB 2");
     tstcheck("Test NoDB 3");
@@ -19,7 +19,7 @@ tstrun("Switching groups on and off",NoDB, FileOnly, SimpleRun)
   tstcase("Simplerun") {
     tstcheck("Test SimpleRun 0 (always)");
   
-    tstskipif(!tsttag(SimpleRun)) {
+    tstskipif(tsttag(SimpleRun)) {
       tstcheck("Test SimpleRun 1");
       tstcheck("Test SimpleRun 2");
       tstcheck("Test SimpleRun 3");
