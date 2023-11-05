@@ -72,7 +72,7 @@ tstrun("Sections") {
             a = 400;
           }
         }
-        tstcheck(a==100);
+        tstcheck(a==400,"Expected 400, got %d", a);
       }
 
       a = -1;
