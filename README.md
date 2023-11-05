@@ -1,6 +1,7 @@
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <img height="150" src="https://github.com/rdentato/tst/assets/48629/248f5856-13bd-4e35-8d9f-0b74a0ecb010"> <br/>
 # tst
-A minimalistic unit test framework for C (and C++). (Join us on [Discord](https://discord.gg/BqsZjDaUxg)!)
+A vary somple, single-header, unit test framework for C (and C++). (Join us on [Discord](https://discord.gg/BqsZjDaUxg)!)
 
 ## Introduction
 `tst` is a lightweight unit testing framework designed for C programs (but works for C++ as well). 
@@ -10,66 +11,11 @@ for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fo
 I never understood why some of the most common unit test frameworks had so many files and complex build.
 If you want to use `tst`, just include `tst.h` and you're ready to write your test cases.
 
+Check the [tutorial](#tutorial/tutorial.md) for a detailed description of how to use `tst`,
 
-## Core Functions Overview
-1. **tstrun(title, ... )**
-   - **Purpose**: Groups test cases, outputs the title and defines the group tags. Implies `main()`.
-   - **Example**:
-     ```c
-     tstrun("Running tests", noDB, simple) {
-       // Your test cases here...
-     }
-     ```
-   
-2. **tstcase( ... )**
-   - **Purpose**: Defines a test case, with a formatted title.
-   - **Example**:
-     ```c
-     tstcase("Testing equality of %d and %d", 1, 1) {
-       // Your checks/assertions here...
-     }
-     ```
-   
-3. **tstcheck(int test, ... )**
-   - **Purpose**: Validates whether `test` is true and outputs either "PASS" or "FAIL" alongside an optional message.
-   - **Example**:
-     ```c
-     tstcheck(1 == 1, "Value mismatch! Expected equality.");
-     ```
-   
-4. **tstassert(int test, ... )**
-   - **Purpose**: Similar to `tstcheck` but halts program execution upon failure.
-   - **Example**:
-     ```c
-     tstassert(1 == 1, "Critical: Value mismatch!");
-     ```
-   
-5. **tstskipif(int test)**
-   - **Purpose**: Skip all the tests in its scope.
-   - **Example**:
-     ```c
-     tstskipif(1 != 1) {
-       tstcheck(2 == 2, "Secondary check failed!"); // will be skipped
-     }
-     ```
-   
-6. **tstclock( ... )**
-   - **Purpose**: Measures and displays elapsed time for specified instructions.
-   - **Example**:
-     ```c
-     tstclock("Measuring time") {
-       // Code block to measure...
-     }
-     ```
-   
-7. **tstnote( ... )**
-   - **Purpose**: Allows for the insertion of contextual notes within test output.
-   - **Example**:
-     ```c
-     tstnote("Note: This test is pivotal for module X integrity.");
-     ```
-   
-## Minimal Example
+Fell free to provide ideas, bugs, and suggestions!
+
+## A small Example
 ```c
 #include "tst.h"  // Ensure the tst framework is included
 
@@ -128,133 +74,3 @@ to execute all the tests.
     41 NOTE 🗎 Testing Complete. Review for any FAIL flags.
 ^^^^^^ RSLT ▷ 1 KO | 3 OK | 1 SKIP
 ```
-## Temporary disabling
-There are cases when you want to switch off a test case, a check, a group, and so on. For cases like these, you just add an underscore after `tst`. 
-For example if we have this test case:
-```
-   tstcase ("Check for 0") {
-
-   }
-```
-we can leave it out this way (has an underscore after `tst`):
-```
-   tst_case ("Check for 0") {
-
-   }
-```
-
-Similarly:
-```
-   tstcheck(x<0,"Too small! %d", x);    // Check enabled
-   tst_check(x==0,"Not zero! %d", x);   // Check disabled
-```
-
-You can also disable an entire test scenario changing `tstrun` into `tst_run()`.
-
-This can be useful when you have test cases that you might no longer need to be executed all the time but still want to keep them in the test suite because they can be useful at a later stage (and you are against using too many `#ifdef` :) )
-
-
-## Tagging and Grouping in `tst`: Selective Test Execution
-
-In the `tst` framework, the ability to tag and group tests is a powerful feature that allows developers to selectively execute specific sets of tests. This is especially useful in scenarios where you might want to run only a subset of your tests, such as when you're working on a specific feature or debugging a particular module.
-
-### How to Tag and Group Tests:
-
-1. **Defining Tags**: 
-   - Add the tags to the `tstrun` function at the beginning of your test file to define all the tags you plan to use.
-   - **Example**:
-     ```c
-     tstrun("Title", Group1, Group2, Group3)
-     ```
-   
-2. **Grouping Tests Using Tags**:
-   - Within `tstrun()`, use the `tstif` function in combination with the `tsttag` function to conditionally run specific blocks of tests based on the tags that are active.
-   - `tsttag(TagName)` returns a boolean value indicating whether a specific tag is active.
-   - **Examples**:
-     ```c
-     tstrun("Title", Group1, Group2, Group3) {
-       tstif(tsttag(Group2) || tsttag(Group3)) {
-         // This block will run only if either Group2 or Group3 is enabled.
-       }
-     }
-     ```
-
-     ```c
-     tstrun() {
-       tstif(!tsttag(Group1) && tsttag(Group3)) {
-         // This block will run only if Group1 is disabled and Group3 is enabled.
-       }
-     }
-     ```
-
-### Selectively Running Tests from the Command-Line:
-
-When executing your tests from the command line, you can enable or disable specific groups of tests by referencing their tags.
-
-- **Syntax**:
-  - Use a `-` prefix to disable a group.
-  - Use a `+` prefix to enable a group.
-  - Use `-*` to disable all tagged tests.
-
-- **Examples**:
-  - To run only the tests tagged as "Group3", excluding tests tagged as "Group1" and "Group2":
-    ```
-    my_tests -Group1 -Group2
-    ```
-    
-  - To disable all tagged tests:
-    ```
-    my_tests -*
-    ```
-    
-  - To run only the tests tagged as "Group2":
-    ```
-    my_tests -* +Group2
-    ```
-
-  - To know which tags are defined:
-    ```
-    my_tests ?
-    ```
-If you are using the `makefile` provided in the `test` directory (which I reccomend to look at), you can drive the 
-execution of groups of tests via the `TSTTAGS` environment variable. For example to exclude the group `NODB`:
-
-  ```
-    $ TSTTAGS=-NODB make -B runtest
-  ```
-
-### Full example:
-
-```c
-#include "tst.h"
-
-tstrun("Grouped tests",NoDB, FileOnly, SimpleRun) {
-  tstif(tsttag(NoDB) && !tsttag(SimpleRun)) {
-     // Only if NoDB is enabled and SimpleRun is disabled.
-  }
-}
-```
-
-```bash
-  $ my_tests ?
-  ./test/t_tst01 [? | [+/-]tag ...]
-  tags: NoDB FileOnly SimpleRun
-
-  $ my_tests -* +FileOnly
-  FILE ▷ t_tst01.c 
-  SKIP├┬ tsttag(NoDB) && !tsttag(SimpleRun) » t_tst01.c:9
-      │╰ 
-  RSLT ▷ 0 KO | 0 OK | 1 SKIP
-```    
-### Benefits:
-
-Tagging and grouping tests offer the flexibility to narrow down the testing focus, which can lead to quicker debugging and development cycles. This feature is especially advantageous in large projects with numerous test cases or in continuous integration environments where only a subset of tests might be relevant to run in certain scenarios.
-
-
-
-## Conclusion
-`tst` offers a user-friendly syntax to facilitate streamlined testing without exhaustive setup or dependencies. Developers may swiftly integrate, run, and diagnose tests, ensuring the robustness and reliability of their C code.
-
-**Note**: Always consider possible improvements or expansions to the tool to match the specific needs of your project, and feel free to contribute to its development a this is an open-source tool.
-
-

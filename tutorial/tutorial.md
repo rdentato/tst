@@ -11,14 +11,18 @@ the various functions. Try to write the tests as cleanly and simply as possible 
 the day of those that will have to understand the code later.
 
 **Contents**<br>
-[Setting tst up](#setup)<br>
-[A minimal example](#min-example)<br>
-[Handling failure](#)<br>
+[Setting tst Up](#setup)<br>
+[A Minimal Example](#min-example)<br>
+[Handling Failure](#)<br>
 [Assertions](#assertions)<br>
-[On the expression to check](#check-expression)<br>
-[Structuring tests using `tstcase`](#testcase)<br>
+[On the Expression to Check](#check-expression)<br>
+[Structuring Tests Using `tstcase`](#testcase)<br>
 [Sections](#sections)<br>
-[Data driven tests](#data-driven)<br>
+[Data Driven Tests](#data-driven)<br>
+[Conditional Test Execution (and Tagging)](#conditional)<br>
+[Disabling tests at compile time](#disabling)<br>
+[Split Tests](#split-tests)<br>
+[Command Line Options](#command-line)<br>
 
 <a id=setup></a>
 ## Integrating `tst` into Your Project
@@ -394,6 +398,7 @@ You can imagine much more complex scenarios involving, for example, allocate and
 with `malloc()`/`free()`, or connecting to a Database or to a network server.
 
 <a id="data-driven"></a>
+
 ## Data driven tests
 
 Another feature of `tstsection`s is that they can be executed on a given array of data.
@@ -438,6 +443,8 @@ Note that, considering how `tstsection`s are executed, you can do something like
     }
   }
 ```
+The `"first check"` section will be executed for each element of the `tstdata` array
+and the the `"Second check"` section will be executed for each element of the array.
 
 This can also be used for *fuzzing* (i.e. execute many tests with random data):
 
@@ -451,14 +458,14 @@ This can also be used for *fuzzing* (i.e. execute many tests with random data):
       for (int k=0; k<4; k++)
         tstdata[k] = 8-(rand() & 0x0F);  // Generate some random data
 
-      // Execute the section once for each element in the tstdata array
+      // Execute the section for each element in the tstdata array
       tstsection("First check") {
-        tstnote("Checking <%d,%s>",tstcurdata.n,tstcurdata.s);
-        tstcheck(first_check(tstcurdata.n , tstcurdata.s));
+        tstcheck(fuzzy_check(tstcurdata));
       }
     }
   }
 ```
+<a id="conditional"></a>
 
 ## Conditional test execution (and tagging)
 
@@ -479,7 +486,7 @@ execution):
       // A bunch of checks that should read from the file
       // They will be skipped the f == NULL
     } 
-    
+
     // other test cases you do want to execute regardless.
   }
 ```
@@ -496,7 +503,7 @@ to the `tstrun()` function and check them with the `tsttag()` function:
 tstrun("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
 {
   tstcase() {
-    tstskipif(!tsttag(TestDB) || tsttag(SimpleRun)) {
+    tstskipif(tsttag(TestDB) && !tsttag(SimpleRun)) {
        // Only if TestDB is enabled and SimpleRun is disabled.
        tstcheck(db.connection != NULL);
     }
@@ -515,26 +522,9 @@ tstrun("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
 }
 ```
 
-By default all tags are enabled. You can disable them when launching the test run.
-For example, to run `mytest` with the "DeepTest" disabled you can execute it this way:
-```
-  $ mytest -DeepTest
-```
-To know which tags are defined you can use the `?` command line option:
+By default all tags are disabled. You can disable them when launching the test run.
+See the section ["Command line options"](#command-line) for more details.
 
-```
-  $ mytest ?
-  Test Scenario: "Switching groups on and off"
-  ./mytest [? | [=] [+/-]tag ... ]
-  tags: TestDB DeepTest SimpleRun
-```
-
-You can also switch all the tags on/off using `*`. For example, to disable
-all tags except `SimpleRun`, you can execute the test as follows:
-
-```
-  $ mytest -* +SimpleRun
-```
 
 You can also set the tag on and off in the code using the `tsttag()` function:
 
@@ -542,6 +532,59 @@ You can also set the tag on and off in the code using the `tsttag()` function:
   tsttag(SimpleRun, 0); // Disable the testst guarded by the SimpleRun tag
   tsttag(SimpleRun, 1); // Re-enable the testst guarded by the SimpleRun tag
 ```
+
+### Using make
+
+If you are using the makefile provided in the `test` directory to run your tests,
+you can easily specify which tags to enable by setting the `TSTTAGS` variable:
+
+  ```
+    $ TSTTAGS=-NODB make -B runtest
+  ```
+<a id="disabling"></a>
+
+## Disabling tests at compile time
+
+There are cases when you may want to remove some test cases form your test suite
+but you do not want to remove them from the code because they might be useful 
+later.
+
+A typical example is if some feature is undergoing some major rewriting that would
+make your tests useless until all the new code is completed.
+
+Another one is when you want to focus on certain tests for debugging purpose and
+want to create a smaller log for making easeier understanding what went wrong.
+
+You might handle this with some `#ifdef` in your code or by defining ad hoc tags
+(see previous section) but this seems pretty annoying to me.
+
+A much easier way is to use a different form of the `tst` functions: you just
+add an underscore after `tst` and that function will behave as if it was not there.
+For example if you have this test case:
+```C
+   tstcase ("Check for 0") {
+
+   }
+```
+and you want to leave it out during compilation, you just change it into:
+```
+   tst_case ("Check for 0") {
+
+   }
+```
+note the underscore `_` after the `tst` part.
+
+Similarly:
+
+```C
+   tstcheck(x<0,"Too small! %d", x);    // Check enabled
+   tst_check(x==0,"Not zero! %d", x);   // Check disabled
+```
+
+You can also disable an entire test scenario changing `tstrun` into `tst_run()`.
+
+
+<a id="split-tests"></a>
 
 ## Split tests
 Usually the `tstcheck()` function is enough to handle the test results but there might be cases when you want to perform some more actions depending on the fact that the test passed or not.
@@ -567,17 +610,65 @@ Example:
 ```
 Note that `tstpassed()` and `tstfailed()` report the result of the latest check.
 
+<a id="command-line"></a>
+## Command line options
 
-### Returning error
+When a `tstrun` is compiled, it will define a main function that will accept the
+the following options.
 
-By default, if a test fails, it will return 1 to signal it as an error. This might be undesirable if the
-tests are run in a script that could interepret this as signal to interrupt the execution.
+### Help
+Specifing `?` as argument, you'll get a short help.
+
+If no tag is specified you'll get something similar to this:
+
+```
+  $ mytest ?
+  Test Scenario: "A run for my tests"
+  ./mytest [? | =]
+```
+
+The *Test Scenario* is the title you provided in the `tstrun()` function.
+
+See below for more details on when there is any tag specified.
+
+### Not Returning Errorr
+
+By default, if a test fails, it will return 1 to signal that there has been one or more errors.
+This might be undesirable if, for example, the test is run in a script that could interrupt
+the execution of all the tests.
 
 You can avoid this by specifiying `=` as the first argument:
 
 ```bash
   $ t_test =
 ```
-so that it will always return 0.
+so that `t_test` will always return 0 even if some tests may have failed.
+
+### Handling tags
+
+If you specified one or more tag, you will receive a help message like this:
+
+```
+  $ mytest ?
+  Test Scenario: "Switching groups on and off"
+  ./mytest [? | [=] [+/-]tag ... ]
+  tags: TestDB DeepTest SimpleRun
+```
+that helps you remember which tags you defined.
+
+By default all tags are *off*, to turn it on you can pass its name to the test program.
+For example, to run `mytest` with the "DeepTest" enabled you can execute it this way:
+
+```
+  $ mytest +DeepTest
+```
+
+You can also switch all the tags on/off using `*`. For example, to enable
+all tags except `SimpleRun`, you can execute the test as follows:
+
+```
+  $ mytest +* -SimpleRun
+```
+
 
 [Home](tutorial.md#top)
