@@ -1,7 +1,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <img height="150" src="https://github.com/rdentato/tst/assets/48629/248f5856-13bd-4e35-8d9f-0b74a0ecb010"> <br/>
 # tst
-A vary somple, single-header, unit test framework for C (and C++). (Join us on [Discord](https://discord.gg/BqsZjDaUxg)!)
+A vary simple, single-header, unit test framework for C (and C++). (Join us on [Discord](https://discord.gg/BqsZjDaUxg)!)
 
 ## Introduction
 `tst` is a lightweight unit testing framework designed for C programs (but works for C++ as well). 
@@ -11,7 +11,7 @@ for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fo
 I never understood why some of the most common unit test frameworks had so many files and complex build.
 If you want to use `tst`, just include `tst.h` and you're ready to write your test cases.
 
-Check the [tutorial](#tutorial/tutorial.md) for a detailed description of how to use `tst`,
+Check the **tutorial** for a detailed description of how to use `tst`,
 
 Fell free to provide ideas, bugs, and suggestions!
 
@@ -26,21 +26,19 @@ tstrun("Primary Test Suite")
       tstcheck(1 != 1, "Failed on purpose");
     }
     
-    tstcase("Time Complexity Analysis") {
-      tstclock("Check counting time") {
-        volatile int b = 1;
-        // Code to analyze...
-        for (int a = 1; a < 100 ; a++) b = a + b;
-      }
+    tstclock("Check counting time") {
+      volatile int b = 1;
+      // Code to analyze...
+      for (int a = 1; a < 100 ; a++) b = a + b;
     }
     
-    tstcase("Grouped Checks: Edge Cases") {
-      tstif(1 == 2, "Inequality" ) {  // Will be skipped!
+    tstcase("Edge Cases") {
+      tstskipif(1 == 1) {  // Next tests will be skipped!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }
 
-      tstif(1 != 2,"Equality") {  // Will be executed!
+      tstskipif(1 != 2) {  // Next tests will be executed!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }
@@ -51,26 +49,24 @@ tstrun("Primary Test Suite")
 ```
 
 Compile and run the above program (no need for a `main()` function)
-to execute all the tests.
+to execute all the tests and generate a log like this:
 
-## Test Results:
 ```
------- FILE ▷ tst_test.c "Primary Test Suite"
-    12 CASE┬── Equality Checks 1, 1
-    13 PASS│  1 == 1
-    14 FAIL├┬ 1 != 1
-           │╰ Failed on purpose
-    12     ╰── 1 KO | 1 OK | 0 SKIP
-    17 CASE┬── Time Complexity Analysis
-    18 CLCK│⚑ 0.001000 ms. Check counting time
-    17     ╰── 0 KO | 0 OK | 0 SKIP
-    25 CASE┬── Grouped Checks: Edge Cases
-    26 SKIP├┬ 1 == 2
-           │╰ Inequality
-    31 PASS│  1 != 2
-    32 PASS│  0 < 1
-    33 PASS│  1 >= 1
-    25     ╰── 0 KO | 2 OK | 1 SKIP
-    41 NOTE 🗎 Testing Complete. Review for any FAIL flags.
-^^^^^^ RSLT ▷ 1 KO | 3 OK | 1 SKIP
+----- FILE ▷ t_small_example.c "Primary Test Suite"
+    5 CASE┬── Equality Checks 1, 1
+    6 PASS│  1 == 1
+    7 FAIL├┬ 1 != 1
+          │╰ Failed on purpose
+    5     ╰── 1 KO | 1 OK | 0 SKIP
+   10 CLCK⚑  1 µs Check counting time
+   16 CASE┬── Edge Cases
+   17 NOTE: SKIP condition: `1 == 1`
+   18 SKIP│  0 < 1
+   19 SKIP│  1 >= 1
+   22 NOTE: SKIP condition: `1 != 2`
+   23 SKIP│  0 < 1
+   24 SKIP│  1 >= 1
+   16     ╰── 0 KO | 0 OK | 4 SKIP
+   28 NOTE: Testing Complete. Review for any FAIL flags.
+^^^^^ RSLT ▷ 1 KO | 1 OK | 4 SKIP
 ```
