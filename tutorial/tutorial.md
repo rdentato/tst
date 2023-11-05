@@ -11,14 +11,77 @@ the various functions. Try to write the tests as cleanly and simply as possible 
 the day of those that will have to understand the code later.
 
 **Contents**<br>
-[Setting tst up](#setting-`tst`-up)<br>
+[Setting tst up](#setup)<br>
+[A minimal example](#min-example)<br>
 
-
-## Setting `tst` up
+<a id=setup></a>
+## Integrating `tst` into Your Project
 
 There is no contstraint on which build system you use as `tst` is a single header library.
 You place the file `tst.h` in a location that is in your include path and just `#include` it.
 
+However, if you use `make` as your build tool, you can benefit of the examples provided in the
+project directory. By organizing your test files and leveraging the provided `makefile`, you
+can seamlessly manage and execute your unit tests. Here's a step-by-step guide to doing this:
+
+### 1. **Set Up a `test` Directory**
+
+To keep your project organized, create a separate `test` directory within your project's root folder. This dedicated directory will house your unit test files, `tst.h` header, and the `makefile`.
+
+```bash
+mkdir test
+```
+
+### 2. **Copy Essential Files**
+
+- **`tst.h`**: This is the main header file for the `tst` framework. Ensure it is visible to your compiler (e.g. with `-I ../src`)
+  
+- **`makefile`**: The provided `makefile` will contain rules to compile and run your unit tests. Ensure this is placed within the `test` directory. Modify the flags in the `CFLAGS` variable as you deem appropriate for your project. For example, it assumes that `tst.h` is in the `../src` directory but this might not be the case for you.
+
+```bash
+cp path_to_tst_files/src/tst.h path_to_project/src/
+cp path_to_tst_files/test/makefile path_to_project/test/
+```
+
+### 3. **Naming Convention for Test Files**
+
+To ensure that the `makefile` correctly identifies unit test files:
+
+- Name your test files with the prefix `t_`, followed by a descriptive name, and then the `.c` extension. For example: `t_mathFunctions.c`.
+
+- By sticking to this naming convention, the `makefile` can easily detect which C files in the directory are intended as unit tests.
+
+Please note that the provided `makefile` also assumes that you want to compile your tests both with a C and a C++ compiler.
+If this is not the case, comment the line that defines the variable `CXX_AVAILABLE`.
+
+### 4. **Compiling and Running Tests**
+
+- **Compile a Single Test**:
+  If you have a test file named `t_xxx.c` and wish to compile it, simply run:
+
+  ```bash
+  make t_xxx
+  ```
+
+  This will compile the `t_xxx.c` file, creating an executable for the test.
+
+- **Compile and Run All Tests**:
+  To compile and execute all unit tests present in the `test` directory:
+
+  ```bash
+  make runtest
+  ```
+
+  The `makefile` will automatically detect all C files prefixed with `t_`, compile them, and execute each test.
+
+  Note that if you add a new test you don't need to change anything in the makefile, as long as you follow the 
+  naming convention, the new test will be picked up automatically.
+
+### Benefits
+
+By setting up a dedicated `test` directory and leveraging the provided `makefile`, you can effortlessly manage and run unit tests using the `tst` framework. This structure not only ensures a clean project layout but also streamlines the testing process, making it easier for developers to maintain and expand upon their test suites.
+
+<a id="min-example"></a>
 ## A minimal example.
 
 Let's define a scenario for our examples: you have a library of functions defined in file `functions.c`
@@ -274,7 +337,7 @@ The code after the last section (usually the cleanup code) will be executed and 
 test case will end.
 
 This can be useful if you want to ensure that groups of tests are executed starting 
-from the same program status. Let's give another example:
+from the same status. Let's give another example:
 
 ```C
 
@@ -482,4 +545,16 @@ Example:
 Note that `tstpassed()` and `tstfailed()` report the result of the latest check.
 
 
-[Home](Readme.md#top)
+### Returning error
+
+By default, if a test fails, it will return 1 to signal it as an error. This might be undesirable if the
+tests are run in a script that could interepret this as signal to interrupt the execution.
+
+You can avoid this by specifiying `=` as the first argument:
+
+```bash
+  $ t_test =
+```
+so that it will always return 0.
+
+[Home](tutorial.md#top)
