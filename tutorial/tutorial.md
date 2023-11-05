@@ -249,8 +249,8 @@ the sake of clarity.
 Within a `tstcase` you may have multiple `tstsection`s.:
 
 ```C
+int a;
 tstcase("Sections") {
-  int a;
   a = 5;
   tstsection("Change to 9") {
     tstcheck(a == 5);
@@ -264,10 +264,14 @@ tstcase("Sections") {
   }
   tstcheck(a != 5);
 }
+tstcheck(a == 8);
 ```
 
 All the tests above will pass. When a section is executed, all the subsequent sections
 are ignored. Then the  testcase is re-executed for the next section and so on.
+
+The code after the last section (usually the cleanup code) will be executed and the
+test case will end.
 
 This can be useful if you want to ensure that groups of tests are executed starting 
 from the same program status. Let's give another example:
