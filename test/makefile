@@ -38,9 +38,9 @@ SRCDIR=../src
 runtest: all
 	@rm -f test.log
 	-@for f in $(TESTS); do ./$$f $(TSTTAGS) 2>> test.log; done 
-	@echo -n "LOG: test.log  FAIL: `grep '^FAIL' test.log | wc -l` "
-	@echo -n "PASS: `grep '^PASS' test.log | wc -l`  "
-	@echo    "SKIP: `grep '^SKIP' test.log | wc -l`"
+	@echo -n "LOG: test.log  FAIL: `grep '^[0-9 ]*FAIL' test.log | wc -l` "
+	@echo -n "PASS: `grep '^[0-9 ]*PASS' test.log | wc -l`  "
+	@echo    "SKIP: `grep '^[0-9 ]*SKIP' test.log | wc -l`"
 	@echo "EXPECTED 4 FAIL HERE △"
 
 .PRECIOUS: %.o
