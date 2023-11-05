@@ -11,7 +11,8 @@ for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fo
 I never understood why some of the most common unit test frameworks had so many files and complex build.
 If you want to use `tst`, just include `tst.h` and you're ready to write your test cases.
 
-Check the **tutorial** for a detailed description of how to use `tst`,
+Check the [**tutorial**](tutorial/) for a detailed description of how to use `tst` or the [**reference manual**](tutorial/reference.md)
+for a short description of each function.
 
 Fell free to provide ideas, bugs, and suggestions!
 
