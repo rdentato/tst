@@ -44,12 +44,12 @@ If you want to use `tst`, just include `tst.h` and you're ready to write your te
      tstassert(1 == 1, "Critical: Value mismatch!");
      ```
    
-5. **tstif(int test, ... )**
-   - **Purpose**: Conditionally executes a block of checks; skips if `test` is false.
+5. **tstskipif(int test)**
+   - **Purpose**: Skip all the tests in its scope.
    - **Example**:
      ```c
-     tstif(1 == 1) {
-       tstcheck(2 == 2, "Secondary check failed!");
+     tstskipif(1 != 1) {
+       tstcheck(2 == 2, "Secondary check failed!"); // will be skipped
      }
      ```
    
