@@ -107,7 +107,7 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
   unsigned char v=1; const char *arg;
   if (names[0][0] == '\0') ntags=tst_tags_zero(); 
   if (argc > 1 && argv[1][0] == '?') {
-    fprintf(stderr,"Test Scenario: \"%s\"\n%s %s",tst_title, argv[0], ntags>0? "[? | [=] [+/-]tag ... ]\ntags: " : "[? | =]");
+    fprintf(stderr,"Test scenario: \"%s\"\n%s %s",tst_title, argv[0], ntags>0? "[? | [=] [+/-]tag ... ]\ntags: " : "[? | =]");
     for (int k=0; k<ntags; k++) fprintf(stderr,"%s ",names[k]);
     fputc('\n',stderr);
     exit(1);
@@ -152,8 +152,8 @@ static inline int tstskipped() {return  (tst_result < 0);}
                               } \
                             } while(0);
 
-#define tst__check_1(t_)  do { int tst_z = (#t_[0] != '\0'); tstcheck_(tst_z,t_) } while (0)
-#define tst__check__(...) do { tstcheck_(1, __VA_ARGS__) } while(0)
+#define tst__check_1(t_)  do { int tst_z = (#t_[0] != '\0'); tstcheck_(tst_z,t_); } while (0)
+#define tst__check__(...) do { tstcheck_(1, __VA_ARGS__); } while(0)
 
 #define tstcheck_(f_, ...)  \
         if (tst_result) { tst_pass++; tst_case_pass++; tst_prtln(TST_STR_PASS); fputs(TST_STR_GREEN,stderr);} \
