@@ -4,6 +4,12 @@
 # Uncomment the following line to generate a minimal log.
 # COMPACT="-DTST_STR_COMPACT"
 
+# Uncomment the following line to disable ANSI colors
+# NOCOLOR="-DTST_STR_NOCOLOR"
+
+# Uncomment the following line to enable debugging
+# DEBUG="-DDEBUG"
+
 _EXE=.exe
 STATIC=-static
 
@@ -15,7 +21,7 @@ endif
 # Comment the following line if you don't want to compile with C++
 CXX_AVAILABLE := $(shell $(CXX) --version 2>/dev/null)
 
-CFLAGS=-O2 -Wall -I../src -I. $(STATIC) $(COMPACT) -DDEBUG
+CFLAGS=-O2 -Wall -I../src -I. $(STATIC) $(COMPACT) $(DEBUG)
 LIBS=
 
 TESTS_SRC_C=$(wildcard t_*.c)
@@ -54,7 +60,7 @@ runtest: all
 	@cat $*.c >> $*++.cpp
 
 %++:%++.cpp
-	$(CXX) $(CXXFLAGS) -o $*++ $*++.cpp
+	$(CXX) $(CXXFLAGS) $*++.cpp -o $*++
 
 clean:
 	rm -f $(TESTS) $(TESTS:=.exe) $(TESTS:=.o) *++.cpp test.log

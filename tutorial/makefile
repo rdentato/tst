@@ -4,6 +4,12 @@
 # Uncomment the following line to generate a minimal log.
 # COMPACT="-DTST_STR_COMPACT"
 
+# Uncomment the following line to disable ANSI colors
+# NOCOLOR="-DTST_STR_NOCOLOR"
+
+# Uncomment the following line to enable debugging
+# DEBUG="-DDEBUG"
+
 _EXE=.exe
 STATIC=-static
 
@@ -14,7 +20,7 @@ endif
 
 CXX_AVAILABLE := $(shell $(CXX) --version 2>/dev/null)
 
-CFLAGS=-O2 -Wall -I../src -I. $(STATIC) $(COMPACT) -DDEBUG
+CFLAGS=-O2 -Wall -I../src -I. $(STATIC) $(COMPACT) $(NOCOLOR) $(DEBUG)
 LIBS=
 
 TESTS_SRC_C=$(wildcard t_*.c)
