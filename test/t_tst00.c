@@ -8,6 +8,8 @@ tstrun("Primary Test Suite")
     tstcase("Equality Checks %d, %d", 1, 1) {
       tstcheck(1 == 1, "Mismatch: %d != %d", 1, 1);
       tstcheck(1 != 1, "Failed on purpose");
+      tstcheck(1 != 1, "Failed on %d purpose",5);
+      tstcheck(1 != 1);
     }
     
     tstcase("Time Complexity Analysis") {

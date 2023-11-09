@@ -610,6 +610,21 @@ Example:
 ```
 Note that `tstpassed()` and `tstfailed()` report the result of the latest check.
 
+<a id="clock"></a>
+## Checking times
+
+It may be useful, sometimes, to get an idea of how much time is spent in one particular piece of code.
+For example, you may want to understand which implementation of a given function performs better.
+The function `tstclock()` can help you in that measuring the processor time spent between the start and
+the end of a block of code.
+
+Here an example to check that the recursive implementation of the factorial is slower than the 
+iterative implementation:
+
+```C
+
+```
+
 <a id="command-line"></a>
 ## Command line options
 
@@ -617,21 +632,21 @@ When a `tstrun` is compiled, it will define a main function that will accept the
 the following options.
 
 ### Help
-Specifing `?` as argument, you'll get a short help.
+Specifing `/h` as argument, you'll get a short help.
 
 If no tag is specified you'll get something similar to this:
 
 ```
   $ mytest ?
   Test Scenario: "A run for my tests"
-  ./mytest [? | =]
+  ./mytest /help | [/color-off] [/report-off]
 ```
 
 The *Test Scenario* is the title you provided in the `tstrun()` function.
 
 See below for more details on when there is any tag specified.
 
-### Not Returning Errorr
+### Not Returning Errors
 
 By default, if a test fails, it will return 1 to signal that there has been one or more errors.
 This might be undesirable if, for example, the test is run in a script that could interrupt
@@ -640,7 +655,7 @@ the execution of all the tests.
 You can avoid this by specifiying `=` as the first argument:
 
 ```bash
-  $ t_test =
+  $ t_test /return-off
 ```
 so that `t_test` will always return 0 even if some tests may have failed.
 
@@ -651,7 +666,7 @@ If you specified one or more tag, you will receive a help message like this:
 ```
   $ mytest ?
   Test Scenario: "Switching groups on and off"
-  ./mytest [? | [=] [+/-]tag ... ]
+  ./mytest [/help | [/color-off] [/report-off] [+/-]tag ... ]
   tags: TestDB DeepTest SimpleRun
 ```
 that helps you remember which tags you defined.
@@ -671,4 +686,4 @@ all tags except `SimpleRun`, you can execute the test as follows:
 ```
 
 
-[Home](tutorial.md#top)
+[Top](#top)
