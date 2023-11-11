@@ -8,15 +8,16 @@ usage () {
   echo "   tstrun [options] [wildcard] [tags]"
   echo ""
   echo "OPTIONS"
-  echo "  -h | --help             this help"
-  echo "  -l | --list             prints the list of available tests"
-  echo "  -d | --test-directory   cd to the directory with tests"
-  echo "  -w | --wildcard         specify a file pattern to match the tests to execute"
-  echo "  -o | --output           the name of the generated logfile"
-  echo "  -c | --color-off        turns off coloured messages"
+  echo "  -h | --help                 this help"
+  echo "  -l | --list                 prints the list of available tests"
+  echo "  -c | --color-off            turns off coloured messages"
+  echo "  -d | --test-directory dir   cd to the directory dir with tests"
+  echo "  -w | --wildcard '*x[yz]'    specify a file pattern to match the tests to execute"
+  echo "  -o | --output filename      the name of the generated logfile"
   echo ""
   echo "WILDCARD"
-  echo "  a filter to select which tests to run"
+  echo "  A filter to select which tests to run ('*' by default). Note that it MUST be"
+  echo "  single quoted to prevent shell expansion. The initial 't_' is implied."
   echo ""
   echo "TAGS"
   echo "  [+/-]tagname to turn the tag on/off"
@@ -40,7 +41,7 @@ while [ "$#" -gt 0 ]; do
       usage ;;
 
    -l | --list)
-      find . -name "t_$WILDCARD" -print | sed -e '/.c$/d' -e '/.cpp/d' | while read -r f ; do $f --l ; done
+      find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f --l ; done
       exit 0 ;;
 
    -w | --wildcard)
@@ -82,7 +83,7 @@ done
 
 echo "output: $OUTFILE ($WILDCARD)"
 echo "STIME `date`" > $OUTFILE
-find . -name "t_$WILDCARD" -print | sed -e '/.c$/d' -e '/.cpp/d' | while read -r f ; do $f $COLOR $* ; done 2>> $OUTFILE
+find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f $COLOR $* ; done 2>> $OUTFILE
 
 FAIL=`grep '^[0-9 ]*FAIL' $OUTFILE | wc -l`
 PASS=`grep '^[0-9 ]*PASS' $OUTFILE | wc -l`
