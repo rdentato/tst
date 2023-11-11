@@ -693,13 +693,16 @@ There is no limitation on how you organize and run your tests. Once you have com
 the test program, you can launch it on its own or add to a CI pipeline or wathever is 
 most appropriate for you.
 
-As an example (and for the purpose of self-testing) I've set up the following conventions:
+As an example I'll describe here how I set up `tst` for self-testing. You may use the 
+same conventions or define your own.
+
+I've decided to adopt the following conventions:
 
 -  Tests are grouped in dedicated directories (at least one)
 -  Tests start with `t_*`
 -  Tests are run from the shell (bash)
 
-I've then created a bash script (`src/tstrun`) which provide more flexibility in launching
+I've then created a bash script (`src/tstrun`) which provides more flexibility in launching
 the tests. It will also provide the total of failed/passed/skipped tests.
 
 Let's look at its `usage()`:
