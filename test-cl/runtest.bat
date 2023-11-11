@@ -1,5 +1,5 @@
 @echo off
-del *.c  *.cpp *.obj *.exe *.log > NUL
+del *.c  *.cpp *.obj *.exe *.log 2> NUL
 
 SETLOCAL EnableDelayedExpansion
 
