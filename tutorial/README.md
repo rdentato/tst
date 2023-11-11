@@ -768,4 +768,11 @@ Since everything is based on naming conventions, you are free to complicate
 (or simplify) this example at will so that using `tst` fits best your
 workflow.
 
+You can also pass the wildcard as first argument:
+
+```
+tstrun -d test_newsuite '*_login_*' +Interactive +LinearScale
+```
+Remember to always include it in single quotes to avoid premature shell expansion.
+
 [Top](#top)
