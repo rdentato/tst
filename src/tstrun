@@ -1,0 +1,94 @@
+#!/bin/bash
+
+##  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
+##  SPDX-License-Identifier: MIT
+
+usage () {
+  echo "Usage:"
+  echo "   tstrun [options] [wildcard] [tags]"
+  echo ""
+  echo "OPTIONS"
+  echo "  -h | --help                 this help"
+  echo "  -l | --list                 prints the list of available tests"
+  echo "  -c | --color-off            turns off coloured messages"
+  echo "  -d | --test-directory dir   cd to the directory dir with tests"
+  echo "  -w | --wildcard '*x[yz]'    specify a file pattern to match the tests to execute"
+  echo "  -o | --output filename      the name of the generated logfile"
+  echo ""
+  echo "WILDCARD"
+  echo "  A filter to select which tests to run ('*' by default). Note that it MUST be"
+  echo "  single quoted to prevent shell expansion. The initial 't_' is implied."
+  echo ""
+  echo "TAGS"
+  echo "  [+/-]tagname to turn the tag on/off"
+  exit 1
+}
+
+WILDCARD="*"
+COLOR=""
+OUTFILE="test.log"
+
+## First character is \033 (ESC)
+COLOR_RED="[1;31m"
+COLOR_GREEN="[0;32m"
+COLOR_YELLOW="[0;33m"
+COLOR_NONE="[0m"
+
+while [ "$#" -gt 0 ]; do
+  case $1 in 
+
+   -h | --help) 
+      usage ;;
+
+   -l | --list)
+      find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f --l ; done
+      exit 0 ;;
+
+   -w | --wildcard)
+      shift
+      if [ "$#" -eq 0 ]; then echo "ERROR: Missing wildcard"; usage ; fi
+      WILDCARD=$1
+      shift ;;
+
+   -d | --test-directory)
+      shift
+      if [ "$#" -eq 0 ]; then echo "ERROR: Missing directory"; usage ; fi
+      cd $1
+      shift ;;
+
+   -c | --color-off)
+      COLOR="--c"
+      COLOR_RED=""
+      COLOR_GREEN=""
+      COLOR_YELLOW=""
+      COLOR_NONE=""
+      shift ;;
+
+    -o | --output)
+      shift;
+      if [ "$#" -eq 0 ]; then echo "ERROR: Missing output file name"; usage ; fi
+      OUTFILE=$1;
+      shift ;;
+
+    --*) echo "Invalid option"; usage ;;
+
+    +*|-*) break ;;
+
+    *)  WILDCARD=$1
+        shift
+        break;
+        ;;
+  esac
+done
+
+echo "output: $OUTFILE ($WILDCARD)"
+echo "STIME `date`" > $OUTFILE
+find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f $COLOR $* ; done 2>> $OUTFILE
+
+FAIL=`grep '^[0-9 ]*FAIL' $OUTFILE | wc -l`
+PASS=`grep '^[0-9 ]*PASS' $OUTFILE | wc -l`
+SKIP=`grep '^[0-9 ]*SKIP' $OUTFILE | wc -l`
+
+echo "TOTAL $COLOR_RED$FAIL FAIL$COLOR_NONE | $COLOR_GREEN$PASS PASS$COLOR_NONE | $COLOR_YELLOW$SKIP SKIP$COLOR_NONE" >> $OUTFILE
+
+echo "ETIME `date`" >> $OUTFILE

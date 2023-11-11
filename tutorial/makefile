@@ -41,12 +41,7 @@ all: $(TESTS)
 SRCDIR=../src
 
 runtest: all
-	@rm -f test.log
-	-@for f in $(TESTS); do ./$$f '=' $(TSTTAGS) 2>> test.log; done 
-	@echo -n "LOG: test.log  FAIL: `grep '^[0-9 ]*FAIL' test.log | wc -l` "
-	@echo -n "PASS: `grep '^[0-9 ]*PASS' test.log | wc -l`  "
-	@echo    "SKIP: `grep '^[0-9 ]*SKIP' test.log | wc -l`"
-	@echo "EXPECTED 2 FAIL HERE △"
+	../src/tstrun
 
 MAKEFLAGS += --no-builtin-rules
 

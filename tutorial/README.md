@@ -23,6 +23,7 @@ the day of those that will have to understand the code later.
 [Disabling tests at compile time](#disabling)<br>
 [Split Tests](#split-tests)<br>
 [Command Line Options](#command-line)<br>
+[Running your tests](#running-tests)<br>
 
 <a id=setup></a>
 ## Integrating `tst` into Your Project
@@ -132,11 +133,11 @@ an executable, say `t_fact` that, when runn, will execute all the tests. report 
 
 ```
 ------ FILE ▷ t_fact.c "Check Factorial"
-     5 PASS│  fact(1) == 1 :5
-     6 PASS│  fact(2) == 2 :6
-     7 PASS│  fact(3) == 6 :7
-     8 PASS│  fact(5) == 120 :8
-^^^^^^ RSLT ▷ 0 KO | 4 OK | 0 SKIP
+     5 PASS│  fact(1) == 1
+     6 PASS│  fact(2) == 2
+     7 PASS│  fact(3) == 6
+     8 PASS│  fact(5) == 120
+^^^^^^ RSLT ▷ 0 FAIL | 4 PASS | 0 SKIP
 ```
 The idea is to have a single executable file which defines a `run` of tests that will cover a
 logically related set of functions or will go over a specific use case.
@@ -170,7 +171,7 @@ We would have got:
      7 PASS│  fact_0(2) == 2
      8 PASS│  fact_0(3) == 6
      9 PASS│  fact_0(5) == 120
-^^^^^^ RSLT ▷ 1 KO | 4 OK | 0 SKIP
+^^^^^^ RSLT ▷ 1 FAIL | 4 PASS | 0 SKIP
 ```
 Note how failures are reported as the first number in the *results* line. That's because,
 most probably, the first thing we want to know if everything went right.
@@ -306,21 +307,21 @@ This will produce the following result:
 ----- FILE ▷ t_fact.c "Check Factorial"
     5 CASE┬── Edge case: 0
     6 PASS│  fact(0) == 1
-    5     ╰── 0 KO | 1 OK | 0 SKIP
+    5     ╰── 0 FAIL | 1 PASS | 0 SKIP
     9 CASE┬── Small input
    10 PASS│  fact(1) == 1
    11 PASS│  fact(2) == 2
    12 PASS│  fact(3) == 6
    13 PASS│  fact(5) == 120
-    9     ╰── 0 KO | 4 OK | 0 SKIP
+    9     ╰── 0 FAIL | 4 PASS | 0 SKIP
    16 CASE┬── Edge case: largest input
    17 PASS│  fact(12) == 479001600
-   16    ╰── 0 KO | 1 OK | 0 SKIP
+   16     ╰── 0 FAIL | 1 PASS | 0 SKIP
    20 CASE┬── Out of range
    21 PASS│  (fact(-3) == 0) && (errno == ERANGE)
    22 PASS│  (fact(21) == 0) && (errno == ERANGE)
-   20    ╰── 0 KO | 2 OK | 0 SKIP
-^^^^^ RSLT ▷ 0 KO | 8 OK | 0 SKIP
+   20     ╰── 0 FAIL | 2 PASS | 0 SKIP
+^^^^^ RSLT ▷ 0 FAIL | 8 PASS | 0 SKIP
 ```
 Note that at the end of each `tstcase` the partial results are reported. The line
 number is the same as the starting line of the test case so to make it easier to 
@@ -684,6 +685,84 @@ all tags except `SimpleRun`, you can execute the test as follows:
 ```
   $ mytest +* -SimpleRun
 ```
+<a id="running-tests"></a>
 
+## Running your tests
+
+There is no limitation on how you organize and run your tests. Once you have compiled
+the test program, you can launch it on its own or add to a CI pipeline or wathever is 
+most appropriate for you.
+
+As an example (and for the purpose of self-testing) I've set up the following conventions:
+
+-  Tests are grouped in dedicated directories (at least one)
+-  Tests start with `t_*`
+-  Tests are run from the shell (bash)
+
+I've then created a bash script (`src/tstrun`) which provide more flexibility in launching
+the tests. It will also provide the total of failed/passed/skipped tests.
+
+Let's look at its `usage()`:
+
+```
+Usage:
+   tstrun [options] [wildcard] [tags]
+
+OPTIONS
+  -h | --help                 this help
+  -l | --list                 prints the list of available tests
+  -c | --color-off            turns off coloured messages
+  -d | --test-directory dir   cd to the directory dir with tests
+  -w | --wildcard '*x[yz]'    specify a file pattern to match the tests to execute
+  -o | --output filename      the name of the generated logfile
+
+WILDCARD
+  A filter to select which tests to run ('*' by default). Note that it MUST be
+  single quoted to prevent shell expansion. The initial 't_' is implied.
+
+TAGS
+  [+/-]tagname to turn the tag on/off
+```
+The options are self explanotory and their use case should be pretty intuitive.
+The `tags` are just passed to each test program as specified.
+
+The `wildcard`, instead, is more interesting as it introduce a furter degree of 
+flexibility in how you launch you tests. On top of organizing them in directories
+and defining tags for including/excluding certain tests, you can define some
+naming convention to finely select which test to run.
+
+For example, say you have two tests directories (an "old test suite" and a "new test suite"):
+```
+  test_oldsuite
+     t_login_prod.c
+     t_login_devel.c
+     t_zoom_prod.c
+     t_zoom_devel.c
+
+  test_newsuite
+     t_login_prod.c
+     t_login_devel.c
+     t_zoom_prod.c
+     t_zoom_devel.c
+```
+
+and your test program understand the tags `Interactive` and `LinearScale`.
+
+You can run all the tests from the "old suite" meant for production (`_prod_`)
+with the tag `Interactive` enabled:
+
+```
+tstrun -w '*_prod_*' -d test_oldsuite +Interactive
+```
+
+Or run all the login tests (`_login_`) for the "new suite":
+
+```
+tstrun -w '*_login_*' -d test_newsuite +Interactive +LinearScale
+```
+
+Since everything is based on naming conventions, you are free to complicate
+(or simplify) this example at will so that using `tst` fits best your
+workflow.
 
 [Top](#top)
