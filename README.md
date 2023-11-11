@@ -71,3 +71,9 @@ to execute all the tests and generate a log like this:
    28 NOTE: Testing Complete. Review for any FAIL flags.
 ^^^^^ RSLT ▷ 1 KO | 1 OK | 4 SKIP
 ```
+## Running your tests
+
+There is no limitation on how you organize and run your tests.
+Just for the purpose of self-testing (and to provide an example on how you could 
+organize your testing workflow) the `tstrun` script (in the `src` directory) provides
+a convenient way to launch groups of tests and pass them argument.
