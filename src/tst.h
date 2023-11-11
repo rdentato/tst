@@ -55,20 +55,15 @@ static int tst_prt_results(short fail,short pass,short skip) {
    return 0;
 } 
 
-//#define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
-//#define tst__argn(...)      tst__cnt(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-//#define tst__cat2(x,y)      x ## y
-//#define tst__cat(x,y)       tst__cat2(x,y)
-//#define tst_vrg(tst__f,...) tst__cat(tst__f, tst__argn(__VA_ARGS__))(__VA_ARGS__)
-
+// Note that the expansion macro (`tst__exp1` and `tst__exp2`) are there only to please MS CL compiler.
 #define tst__count(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
-#define tst__argn(...)      tst__count tst_exp1((__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
-#define tst_exp2(x,y)       x y
-#define tst_exp1(x)         x
-#define tst__cat0(x,y)      x ## y
-#define tst__cat1(x,y)      tst__cat0(x,y)
-#define tst__cat2(x,y)      tst__cat1(x,y)
-#define tst_vrg(_f,...)     tst_exp2(tst__cat2(_f, tst__argn(__VA_ARGS__)),tst_exp1((__VA_ARGS__)))
+#define tst__argn(...)  tst__count tst__exp1((__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+#define tst__exp2(x,y)  x y
+#define tst__exp1(x)    x
+#define tst__cat0(x,y)  x ## y
+#define tst__cat1(x,y)  tst__cat0(x,y)
+#define tst__cat2(x,y)  tst__cat1(x,y)
+#define tst_vrg(_f,...) tst__exp2(tst__cat2(_f, tst__argn(__VA_ARGS__)),tst__exp1((__VA_ARGS__)))
 
 #define tst_tags(...)                          tst_vrg(tst_tags_,__VA_ARGS__)
 #define tst_tags_1(_0)                         tst_tags__(0,_1,_2,_3,_4,_5,_6,_7,_8)  
