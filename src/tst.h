@@ -1,6 +1,6 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.5.1-rc
+//  SPDX-PackageVersion: 0.5.2-rc
 
 #ifndef TST_VERSION
 #define TST_VERSION 0x0005001C
@@ -30,20 +30,20 @@ static const char *tst_str_green  = "\0\033[0;32m";
 static const char *tst_str_yellow = "\0\033[0;33m";
 static const char *tst_str_normal = "\0\033[0m";
 
-#define tst_str_skip      "SKIP│  "
-#define tst_str_fail      "FAIL│  "
-#define tst_str_pass      "PASS│  "
-#define tst_str_skip_tst  "SKPT│╭─(%s)"
-#define tst_str_skip_end  "    │╰─"
-#define tst_str_case      "CASE┬──"
-#define tst_str_case_end  "    ╰── "
-#define tst_str_file      "----- FILE ▷"
-#define tst_str_file_end  "^^^^^ RSLT ▷ "
-#define tst_str_file_abr  "^^^^^ ABRT ▷ "
-#define tst_str_clck      "CLCK⚑  %ld %ss "
+#define tst_str_skip      "SKIP|  "
+#define tst_str_fail      "FAIL|  "
+#define tst_str_pass      "PASS|  "
+#define tst_str_skip_tst  "SKPT|,-(%s)"
+#define tst_str_skip_end  "    |`---"
+#define tst_str_case      "CASE,--"
+#define tst_str_case_end  "    `--- "
+#define tst_str_file      "----- FILE >"
+#define tst_str_file_end  "^^^^^ RSLT > "
+#define tst_str_file_abr  "^^^^^ ABRT > "
+#define tst_str_clck      "CLCK;  %ld %ss "
 #define tst_str_note      "NOTE:"
-#define tst_str_sctn      "SCTN│┌─"
-#define tst_str_sctn_end  "    │└─"
+#define tst_str_sctn      "SCTN|,--"
+#define tst_str_sctn_end  "    |`---"
 
 #define tst_prtf(...) (fprintf(stderr, __VA_ARGS__), tst_zero &= fputc('\n',stderr))
 #define tst_prtln(s)  fprintf(stderr, "%5d %s" , __LINE__, s)
@@ -55,11 +55,20 @@ static int tst_prt_results(short fail,short pass,short skip) {
    return 0;
 } 
 
-#define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
-#define tst__argn(...)      tst__cnt(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-#define tst__cat2(x,y)      x ## y
-#define tst__cat(x,y)       tst__cat2(x,y)
-#define tst_vrg(tst__f,...) tst__cat(tst__f, tst__argn(__VA_ARGS__))(__VA_ARGS__)
+//#define tst__cnt(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
+//#define tst__argn(...)      tst__cnt(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+//#define tst__cat2(x,y)      x ## y
+//#define tst__cat(x,y)       tst__cat2(x,y)
+//#define tst_vrg(tst__f,...) tst__cat(tst__f, tst__argn(__VA_ARGS__))(__VA_ARGS__)
+
+#define tst__count(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
+#define tst__argn(...)      tst__count tst_exp1((__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+#define tst_exp2(x,y)       x y
+#define tst_exp1(x)         x
+#define tst__cat0(x,y)      x ## y
+#define tst__cat1(x,y)      tst__cat0(x,y)
+#define tst__cat2(x,y)      tst__cat1(x,y)
+#define tst_vrg(_f,...)     tst_exp2(tst__cat2(_f, tst__argn(__VA_ARGS__)),tst_exp1((__VA_ARGS__)))
 
 #define tst_tags(...)                          tst_vrg(tst_tags_,__VA_ARGS__)
 #define tst_tags_1(_0)                         tst_tags__(0,_1,_2,_3,_4,_5,_6,_7,_8)  
@@ -176,7 +185,7 @@ static inline int tstskipped() {return (tst_result < 0);}
 
 #define tstcheck(t_,...) \
   do { const char* tst_s = #t_;  \
-    tst_result = tst_skip_test? -1 : !!(t_); \
+    tst_result = (short)(tst_skip_test? -1 : !!(t_)); \
     switch (tst_result) { \
       case -1: tst_skip++; tst_case_skip++; tst_prtln(tst_str_skip); fputs(tst_str_yellow+tst_color, stderr); break; \
       case  0: tst_fail++; tst_case_fail++; tst_prtln(tst_str_fail); fputs(tst_str_red   +tst_color, stderr); break; \

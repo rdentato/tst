@@ -6,4 +6,5 @@ runtest:
 
 clean:
 	cd test; make clean
+	cd test-cl; ./clean.sh
 	cd tutorial; make clean

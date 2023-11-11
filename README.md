@@ -14,7 +14,20 @@ If you want to use `tst`, just include `tst.h` and you're ready to write your te
 Check the [**tutorial**](tutorial/) for a detailed description of how to use `tst` or the [**reference manual**](tutorial/reference.md)
 for a short description of each function.
 
-Fell free to provide ideas, bugs, and suggestions!
+Fell free to provide ideas, bugs, suggestions or even full Pull Requests if you feel inclined to do so!
+
+## Supported platforms
+
+`tst.h` has been tested and confirmed to work on the following combination of platforms/compilers. If you find
+any issue on using `tst.h` with your compiler, please let me know.
+
+- `gcc`         On Linux and Windows WSL2 
+- `g++`         On Linux and Windows WSL2 
+- `clang`       On Linux and Windows WSL2 
+- `cl (C)`      On Windows (see the `test-cl` directory)
+- `cl (C++)`    On Windows (see the `test-cl` directory)
+- `mingw-gcc`   On Windows
+
 
 ## A small Example
 ```c
