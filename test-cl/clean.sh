@@ -1,0 +1,1 @@
+rm -f *.c  *.cpp *.obj *.exe *.log NUL
