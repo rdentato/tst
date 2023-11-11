@@ -19,7 +19,7 @@ tstrun("Primary Test Suite")
         tstassert(1 >= 1, "1 should be equal to 1");
       }
 
-      tstskipif(1 != 2) {  // Next tests will be executed!
+      tstskipif(1 == 2) {  // Next tests will be executed!
         tstcheck(0 < 1, "0 should be less than 1");
         tstassert(1 >= 1, "1 should be equal to 1");
       }
