@@ -1,9 +1,9 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.5.2-rc
+//  SPDX-PackageVersion: 0.6.0-rc
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0005001C
+#define TST_VERSION 0x0006000C
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,11 +51,11 @@ static const char *tst_str_normal = "\0\033[0m";
 static int tst_prt_results(short fail,short pass,short skip) {
    fprintf(stderr,"%s%d FAIL%s | ",tst_str_red    + tst_color, fail, tst_str_normal+tst_color);
    fprintf(stderr,"%s%d PASS%s | ",tst_str_green  + tst_color, pass, tst_str_normal+tst_color);
-   fprintf(stderr,"%s%d SKIP%s" ,tst_str_yellow + tst_color, skip, tst_str_normal+tst_color);
+   fprintf(stderr,"%s%d SKIP%s"   ,tst_str_yellow + tst_color, skip, tst_str_normal+tst_color);
    return 0;
 } 
 
-// Note that the expansion macro (`tst__exp1` and `tst__exp2`) are there only to please MS CL compiler.
+// The expansion and the double `tst__cat` macros are there only to please MS CL compiler :(
 #define tst__count(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
 #define tst__argn(...)  tst__count tst__exp1((__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 #define tst__exp2(x,y)  x y
@@ -112,11 +112,9 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
         case 'r': report_error = 1; break;
         case 'c': tst_color = 0; break;
         case 'h': fprintf(stderr,"Test scenario: \"%s\"\n%s %s", tst_title, argv[0], TST_STR_HELP);
-                  for (int k=0; k<ntags; k++) fprintf(stderr," %s",names[k]);
-                  fputc('\n',stderr);
-                  exit(1);
+                  goto prttags;
         case 'l': fprintf(stderr,"%s \"%s\"", argv[0], tst_title);
-                  for (int k=0; k<ntags; k++) fprintf(stderr," %s",names[k]);
+         prttags: for (int k=0; k<ntags; k++) fprintf(stderr," %s",names[k]);
                   fputc('\n',stderr);
                   exit(0);
       }
