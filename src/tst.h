@@ -1,9 +1,9 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.6.0-rc
+//  SPDX-PackageVersion: 0.5.4-rc
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0006000C
+#define TST_VERSION 0x0005004C
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,19 +45,19 @@ static const char *tst_str_normal = "\0\033[0m";
 #define tst_str_sctn      "SCTN|,--"
 #define tst_str_sctn_end  "    |`---"
 
-#define tst_prtf(...) (fprintf(stderr, __VA_ARGS__), tst_zero &= fputc('\n',stderr))
+#define tst_prtf(...) (fprintf(stderr, __VA_ARGS__), tst_zero &= (short)fputc('\n',stderr))
 #define tst_prtln(s)  fprintf(stderr, "%5d %s" , __LINE__, s)
 
-static int tst_prt_results(short fail,short pass,short skip) {
-   fprintf(stderr,"%s%d FAIL%s | ",tst_str_red    + tst_color, fail, tst_str_normal+tst_color);
-   fprintf(stderr,"%s%d PASS%s | ",tst_str_green  + tst_color, pass, tst_str_normal+tst_color);
-   fprintf(stderr,"%s%d SKIP%s"   ,tst_str_yellow + tst_color, skip, tst_str_normal+tst_color);
+static int tst_prt_results(int fail, int pass, int skip) {
+   fprintf(stderr,"%s%d FAIL%s | ",   tst_str_red+tst_color, fail, tst_str_normal+tst_color);
+   fprintf(stderr,"%s%d PASS%s | ", tst_str_green+tst_color, pass, tst_str_normal+tst_color);
+   fprintf(stderr,"%s%d SKIP%s"   ,tst_str_yellow+tst_color, skip, tst_str_normal+tst_color);
    return 0;
 } 
 
-// The expansion and the double `tst__cat` macros are there only to please MS CL compiler :(
-#define tst__count(_1,_2,_3,_4,_5,_6,_7,_8,_9,_N, ...) _N
-#define tst__argn(...)  tst__count tst__exp1((__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+// The macros `exp1`, `exp2` and `cat2` have been introduced to support Micorsoft `cl` compiler
+#define tst__count(_1,_2,_3,_4,_5,_6,_7,_8,_9,_A,_B,_C,_D,_E,_F,_N, ...) _N
+#define tst__argn(...)  tst__count tst__exp1((__VA_ARGS__, F, E, D, C, B, A, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
 #define tst__exp2(x,y)  x y
 #define tst__exp1(x)    x
 #define tst__cat0(x,y)  x ## y
@@ -90,7 +90,7 @@ static unsigned char tst_tags_val = 0x00; // All tags are "off" by default
    static unsigned char tst_tag_##_7=0x40; static unsigned char tst_tag_##_8=0x80; \
    static const char *tst_tag_names[8] = {#_1,#_2,#_3,#_4,#_5,#_6,#_7,#_8}; \
    static inline int tst_parsetags(int argc, const char **argv) {return tst_parse_tags(argc,argv, n_, tst_tag_names);}\
-   static inline int tst_tags_zero() { return tst_zero & (tst_tag_##_1 | tst_tag_##_2 | tst_tag_##_3| tst_tag_##_4| \
+   static inline int tst_tags_zero(void) { return tst_zero & (tst_tag_##_1 | tst_tag_##_2 | tst_tag_##_3| tst_tag_##_4| \
                                                           tst_tag_##_5 | tst_tag_##_6 | tst_tag_##_7| tst_tag_##_8); }
 
 static inline int tst_tags_zero(); // tst_tags_zero() always returns 0 and is used just to avoid compiler warnings.
@@ -99,7 +99,7 @@ static inline int tst_tags_zero(); // tst_tags_zero() always returns 0 and is us
 #define TST_STR_HELP_TAGS   "[--help] [--color-off] [--report-error] [--list] [+/-]tag ... ]\ntags:"
 #define TST_STR_HELP (ntags>0? TST_STR_HELP_TAGS : TST_STR_HELP_NOTAGS )
 
-static inline int tst_parse_tags(int argc, const char **argv, int ntags, const char **names) {
+static inline short tst_parse_tags(int argc, const char **argv, int ntags, const char **names) {
   unsigned char v;
   const char *arg;
   short report_error = 0;
@@ -127,8 +127,8 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
   
     for (int k=0; k<ntags; k++) {
       if (strcmp(arg,names[k])==0) {
-        if (v) tst_tags_val |=  (1<<k);
-        else   tst_tags_val &= ~(1<<k);
+        if (v) tst_tags_val |= (unsigned char)(1<<k);
+        else   tst_tags_val &= (unsigned char)(~(1<<k));
       }
     }
   }
@@ -136,7 +136,7 @@ static inline int tst_parse_tags(int argc, const char **argv, int ntags, const c
   return (report_error);
 }
 
-static inline char *tst_time()
+static inline char *tst_time(void)
 {
   time_t cur_tm;    
   struct tm *tm; 
@@ -149,32 +149,32 @@ static inline char *tst_time()
 
 #define tstrun_(tst_, title_,...) \
   tst_tags(0,__VA_ARGS__); void tst__run(int n); \
-  int main(int argc, const char **argv) { \
+  int main(int argc, char **argv) { \
     tst_title = title_; \
-    tst_report_err = tst_parsetags(argc,argv); \
-    if (CLOCKS_PER_SEC == ((clock_t)1000000000)) tst_clock_unit = "n"; \
-    else if(CLOCKS_PER_SEC == ((clock_t)1000000)) tst_clock_unit = "µ"; \
-    else if(CLOCKS_PER_SEC == ((clock_t)1000)) tst_clock_unit = "m"; \
+    tst_report_err = (short)tst_parsetags(argc,(const char **)argv); \
+    if (CLOCKS_PER_SEC > ((clock_t)1000000) + tst_zero) tst_clock_unit = "n"; \
+    else if(CLOCKS_PER_SEC > ((clock_t)1000) + tst_zero) tst_clock_unit = "u"; \
+    else tst_clock_unit = "m"; \
     fprintf(stderr, "%s %s \"%s\" %s%s\n", tst_str_file, __FILE__, tst_title, tst_time(), (tst_?"":" (disabled)"));\
     if (tst_) tst__run(tst_usestatic); \
-    fputs( tst_str_file_end,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time());\
+    fputs(tst_str_file_end,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time());\
     return ((tst_fail > 0) * tst_report_err); \
   } void tst__run(int tst_n) 
 
 #define tstrun(title_,...)  tstrun_((!tst_zero), title_, __VA_ARGS__)
 #define tst_run(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
 
-static unsigned short tst_vars[6] = {0}; // Ensures that `tstcheck` can be used outside a `tstcase` block.
+static short tst_vars[6] = {0}; // Ensures that `tstcheck` can be used outside a `tstcase` block.
 
 // This is only used to avoid that the compiler complains about unused static variables.
 #define tst_usestatic ((  tst_result & tst_case_pass & tst_case_fail & tst_case_skip \
                         & tst_vars[0] & tstdata[0] & (int)tstelapsed))
 
-#define tst(x) (tst_result = !!(x))
+#define tst(x) (tst_result = (short)(!!(x)))
 
-static inline int tstfailed()  {return !tst_result;}
-static inline int tstpassed()  {return  tst_result;}
-static inline int tstskipped() {return (tst_result < 0);}
+static inline int tstfailed(void)  {return !tst_result;}
+static inline int tstpassed(void)  {return  tst_result;}
+static inline int tstskipped(void) {return (tst_result < 0);}
 
 #define tstcheck(t_,...) \
   do { const char* tst_s = #t_;  \
@@ -200,11 +200,11 @@ static inline int tstskipped() {return (tst_result < 0);}
 #define tst_skip_test tst_vars[5]
 #define tstskipif(tst_) \
   for (int tst_k = 1 ; \
-       tst_k &&  ((tst_skip_test = !!(tst_)),1); \
-       tst_k = (tst_skip_test = (tst_skip_test? (tst_prtln(""), tst_prtf("%s",tst_str_skip_end)):0))) \
+       tst_k &&  ((tst_skip_test = (short)(!!(tst_))),1); \
+       tst_k = (tst_skip_test = (short)(tst_skip_test? (tst_prtln(""), tst_prtf("%s",tst_str_skip_end)):0))) \
     if (tst_skip_test && (tst_prtln(""), tst_prtf(tst_str_skip_tst,#tst_))) ; else
 
-static const char *tst_clock_unit="?";
+static const char *tst_clock_unit;
 static clock_t tstelapsed = 0;
 #define tstelapsed() tstelapsed
 
@@ -229,7 +229,7 @@ static clock_t tstelapsed = 0;
    if (tst_prtln(tst_str_case), tst_prtf(" " __VA_ARGS__)) ; \
    else for (short tst_vars[6] = {0, tst_sect_not_last, 0, 0, 0, 0}; \
              ((tst_sect_counter == tst_sect_not_last) && (tst_sect_counter = -1)) || \
-                        (tst_prtln(tst_str_case_end), tst_prt_results(tst_case_fail, tst_case_pass, tst_case_skip), tst_zero &= fputc('\n',stderr));\
+                        (tst_prtln(tst_str_case_end), tst_prt_results(tst_case_fail, tst_case_pass, tst_case_skip), tst_zero &= (short)fputc('\n',stderr));\
              tst_sect_iterator += 1)
 
 static volatile unsigned short tstdata[1]={0};
