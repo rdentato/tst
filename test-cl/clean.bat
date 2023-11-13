@@ -1,2 +1,2 @@
 @echo off
-del *.c  *.cpp *.obj *.exe > NUL
+del *.c  *.cpp *.obj *.exe *.log > NUL
