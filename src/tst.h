@@ -40,18 +40,21 @@ static const char *tst_str_normal = "\0\033[0m";
 #define tst_str_file      "----- FILE >"
 #define tst_str_file_end  "^^^^^ RSLT > "
 #define tst_str_file_abr  "^^^^^ ABRT > "
-#define tst_str_clck      "CLCK;  %ld %ss "
+#define tst_str_clck      "CLCK:  %ld %ss "
 #define tst_str_note      "NOTE:"
 #define tst_str_sctn      "SCTN|,--"
 #define tst_str_sctn_end  "    |`---"
+#define tst_str_scrn      "<<<<< "
+#define tst_str_scrn_end  ">>>>>\n"
 
+#define tstprintf(...) fprintf(stderr,__VA_ARGS__)
 #define tst_prtf(...) (fprintf(stderr, __VA_ARGS__), tst_zero &= (short)fputc('\n',stderr))
 #define tst_prtln(s)  fprintf(stderr, "%5d %s" , __LINE__, s)
 
 static int tst_prt_results(int fail, int pass, int skip) {
-   fprintf(stderr,"%s%d FAIL%s | ",   tst_str_red+tst_color, fail, tst_str_normal+tst_color);
-   fprintf(stderr,"%s%d PASS%s | ", tst_str_green+tst_color, pass, tst_str_normal+tst_color);
-   fprintf(stderr,"%s%d SKIP%s"   ,tst_str_yellow+tst_color, skip, tst_str_normal+tst_color);
+   fprintf(stderr,"%s%d FAIL%s | ",tst_color+tst_str_red   , fail, tst_str_normal+tst_color);
+   fprintf(stderr,"%s%d PASS%s | ",tst_color+tst_str_green , pass, tst_str_normal+tst_color);
+   fprintf(stderr,"%s%d SKIP%s"   ,tst_color+tst_str_yellow, skip, tst_str_normal+tst_color);
    return 0;
 } 
 
@@ -91,13 +94,12 @@ static unsigned char tst_tags_val = 0x00; // All tags are "off" by default
    static const char *tst_tag_names[8] = {#_1,#_2,#_3,#_4,#_5,#_6,#_7,#_8}; \
    static inline int tst_parsetags(int argc, const char **argv) {return tst_parse_tags(argc,argv, n_, tst_tag_names);}\
    static inline int tst_tags_zero(void) { return tst_zero & (tst_tag_##_1 | tst_tag_##_2 | tst_tag_##_3| tst_tag_##_4| \
-                                                          tst_tag_##_5 | tst_tag_##_6 | tst_tag_##_7| tst_tag_##_8); }
+                                                              tst_tag_##_5 | tst_tag_##_6 | tst_tag_##_7| tst_tag_##_8); }
 
 static inline int tst_tags_zero(); // tst_tags_zero() always returns 0 and is used just to avoid compiler warnings.
 
 #define TST_STR_HELP_NOTAGS "[--help] [--color-off] [--report-error] [--list]"
-#define TST_STR_HELP_TAGS   "[--help] [--color-off] [--report-error] [--list] [+/-]tag ... ]\ntags:"
-#define TST_STR_HELP (ntags>0? TST_STR_HELP_TAGS : TST_STR_HELP_NOTAGS )
+#define TST_STR_HELP_TAGS   " [+/-]tag ... ]\ntags:" 
 
 static inline short tst_parse_tags(int argc, const char **argv, int ntags, const char **names) {
   unsigned char v;
@@ -111,7 +113,8 @@ static inline short tst_parse_tags(int argc, const char **argv, int ntags, const
       switch (arg[2]) {
         case 'r': report_error = 1; break;
         case 'c': tst_color = 0; break;
-        case 'h': fprintf(stderr,"Test scenario: \"%s\"\n%s %s", tst_title, argv[0], TST_STR_HELP);
+        case 'h': fprintf(stderr,"Test suite: \"%s\"\n%s %s", tst_title, argv[0], TST_STR_HELP_NOTAGS);
+                  if (ntags>0) fputs(TST_STR_HELP_TAGS,stderr);
                   goto prttags;
         case 'l': fprintf(stderr,"%s \"%s\"", argv[0], tst_title);
          prttags: for (int k=0; k<ntags; k++) fprintf(stderr," %s",names[k]);
@@ -180,9 +183,9 @@ static inline int tstskipped(void) {return (tst_result < 0);}
   do { const char* tst_s = #t_;  \
     tst_result = (short)(tst_skip_test? -1 : !!(t_)); \
     switch (tst_result) { \
-      case -1: tst_skip++; tst_case_skip++; tst_prtln(tst_str_skip); fputs(tst_str_yellow+tst_color, stderr); break; \
-      case  0: tst_fail++; tst_case_fail++; tst_prtln(tst_str_fail); fputs(tst_str_red   +tst_color, stderr); break; \
-      case  1: tst_pass++; tst_case_pass++; tst_prtln(tst_str_pass); fputs(tst_str_green +tst_color, stderr); break; \
+      case -1: tst_skip++; tst_case_skip++; tst_prtln(tst_str_skip); fputs(tst_color+tst_str_yellow, stderr); break; \
+      case  0: tst_fail++; tst_case_fail++; tst_prtln(tst_str_fail); fputs(tst_color+tst_str_red   , stderr); break; \
+      case  1: tst_pass++; tst_case_pass++; tst_prtln(tst_str_pass); fputs(tst_color+tst_str_green , stderr); break; \
     } \
     fprintf(stderr, "%s%s", tst_s, tst_str_normal+tst_color); \
     if (tst_result == 0) { fprintf(stderr," \"" __VA_ARGS__); fputc('"',stderr); } \
@@ -215,6 +218,10 @@ static clock_t tstelapsed = 0;
         tst_prtln(""), fprintf(stderr, tst_str_clck, tstelapsed, tst_clock_unit), tst_clk=tst_prtf(__VA_ARGS__))
 
 #define tstnote(...) (tst_prtln(tst_str_note), tst_prtf( " " __VA_ARGS__))
+
+#define tstouterr(...) for (int tst_k = (tst_prtln(tst_str_scrn),tst_prtf(" " __VA_ARGS__ ),1); \
+                         tst_k; \
+                         tst_k = 0,fputc('\n',stderr),tst_prtln(tst_str_scrn_end) )
 
 #define tst_sect_iterator  tst_vars[0]
 #define tst_sect_counter   tst_vars[1]
