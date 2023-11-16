@@ -30,22 +30,22 @@ static const char *tst_str_green  = "\0\033[0;32m";
 static const char *tst_str_yellow = "\0\033[0;33m";
 static const char *tst_str_normal = "\0\033[0m";
 
-#define tst_str_skip      "SKIP|  "
-#define tst_str_fail      "FAIL|  "
-#define tst_str_pass      "PASS|  "
-#define tst_str_skip_tst  "SKPT|,-(%s)"
-#define tst_str_skip_end  "    |`---"
-#define tst_str_case      "CASE,--"
-#define tst_str_case_end  "    `--- "
-#define tst_str_file      "----- FILE >"
-#define tst_str_file_end  "^^^^^ RSLT > "
-#define tst_str_file_abr  "^^^^^ ABRT > "
-#define tst_str_clck      "CLCK:  %ld %ss "
-#define tst_str_note      "NOTE:"
-#define tst_str_sctn      "SCTN|,--"
-#define tst_str_sctn_end  "    |`---"
-#define tst_str_scrn      "<<<<< "
-#define tst_str_scrn_end  ">>>>>\n"
+const char *tst_str_skip      = "SKIP|  ";
+const char *tst_str_fail      = "FAIL|  ";
+const char *tst_str_pass      = "PASS|  ";
+const char *tst_str_skip_tst  = "SKPT|,-(%s)";
+const char *tst_str_skip_end  = "    |`---";
+const char *tst_str_case      = "CASE,--";
+const char *tst_str_case_end  = "    `--- ";
+const char *tst_str_file      = "----- FILE >";
+const char *tst_str_file_end  = "^^^^^ RSLT > ";
+const char *tst_str_file_abr  = "^^^^^ ABRT > ";
+const char *tst_str_clck      = "CLCK:  %ld %ss ";
+const char *tst_str_note      = "NOTE:";
+const char *tst_str_sctn      = "SCTN|,--";
+const char *tst_str_sctn_end  = "    |`---";
+const char *tst_str_scrn      = "<<<<< ";
+const char *tst_str_scrn_end  = ">>>>>\n";
 
 #define tstprintf(...) fprintf(stderr,__VA_ARGS__)
 #define tst_prtf(...) (fprintf(stderr, __VA_ARGS__), tst_zero &= (short)fputc('\n',stderr))
@@ -179,26 +179,27 @@ static inline int tstfailed(void)  {return !tst_result;}
 static inline int tstpassed(void)  {return  tst_result;}
 static inline int tstskipped(void) {return (tst_result < 0);}
 
-#define tstcheck(t_,...) \
-  do { const char* tst_s = #t_;  \
-    tst_result = (short)(tst_skip_test? -1 : !!(t_)); \
+#define tstcheck_(tst_a,tst_s,tst_r,...) \
+  do { \
+    tst_result = (short)(tst_skip_test? -1 : !!(tst_r)); \
     switch (tst_result) { \
       case -1: tst_skip++; tst_case_skip++; tst_prtln(tst_str_skip); fputs(tst_color+tst_str_yellow, stderr); break; \
       case  0: tst_fail++; tst_case_fail++; tst_prtln(tst_str_fail); fputs(tst_color+tst_str_red   , stderr); break; \
       case  1: tst_pass++; tst_case_pass++; tst_prtln(tst_str_pass); fputs(tst_color+tst_str_green , stderr); break; \
     } \
     fprintf(stderr, "%s%s", tst_s, tst_str_normal+tst_color); \
-    if (tst_result == 0) { fprintf(stderr," \"" __VA_ARGS__); fputc('"',stderr); } \
+    if (tst_result == 0) { \
+      fprintf(stderr," \"" __VA_ARGS__); fputc('"',stderr); \
+      if (tst_a)  { \
+        fputs(tst_str_file_abr,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time()); \
+        exit(0);\
+      } \
+    } \
     fputc('\n', stderr); \
   } while(0);
 
-#define tstassert(...) \
-  do { tstcheck(__VA_ARGS__); \
-    if (tst_result == 0) { \
-      fputs(tst_str_file_abr,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time()); \
-      exit(0);\
-    } \
-  } while(0)
+#define tstcheck(t_,...)  tstcheck_(tst_zero,#t_,t_,__VA_ARGS__)
+#define tstassert(t_,...) tstcheck_(!tst_zero,#t_,t_,__VA_ARGS__)
 
 #define tst_skip_test tst_vars[5]
 #define tstskipif(tst_) \
