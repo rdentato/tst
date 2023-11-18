@@ -3,7 +3,7 @@
 
 #include "tst.h"
 
-tstrun("Sections") {
+tstsuite("Sections") {
   tstcase("All sections") {
     int a = -1;
 

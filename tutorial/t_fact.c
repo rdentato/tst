@@ -1,7 +1,7 @@
 #include "tst.h"
 #include "functions.h"
 
-tstrun("Check Factorial") {
+tstsuite("Check Factorial") {
   tstcase("Edge case: 0") {
     tstcheck(fact(0) == 1); // 0! = 1
   }

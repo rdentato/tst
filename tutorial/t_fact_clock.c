@@ -1,7 +1,7 @@
 #include "tst.h"
 #include "functions.h"
 
-tstrun("Check Factorial speed")
+tstsuite("Check Factorial speed")
 {
 
   clock_t recursive_elapsed = 0;

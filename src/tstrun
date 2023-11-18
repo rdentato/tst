@@ -10,7 +10,7 @@ usage () {
   echo "OPTIONS"
   echo "  -h | --help                 this help"
   echo "  -l | --list                 prints the list of available tests"
-  echo "  -c | --color-off            turns off coloured messages"
+  echo "  -c | --color                toggles coloured messages on/off"
   echo "  -d | --test-directory dir   cd to the directory dir with tests"
   echo "  -w | --wildcard '*x[yz]'    specify a file pattern to match the tests to execute"
   echo "  -o | --output filename      the name of the generated logfile"
@@ -27,12 +27,34 @@ usage () {
 WILDCARD="*"
 COLOR=""
 OUTFILE="test.log"
+TAGS=""
 
-## First character is \033 (ESC)
-COLOR_RED="[1;31m"
-COLOR_GREEN="[0;32m"
-COLOR_YELLOW="[0;33m"
-COLOR_NONE="[0m"
+COLOR_TOGGLE=1
+DEFAULT_OPTIONS=0
+
+toggle_color () {
+    if [ $COLOR_TOGGLE -eq 0 ]; then
+      COLOR_TOGGLE=1
+      ## First character is \033 (ESC)
+      COLOR_RED="[1;31m"
+      COLOR_GREEN="[0;32m"
+      COLOR_YELLOW="[0;33m"
+      COLOR_NONE="[0m"
+    else
+      COLOR_TOGGLE=0
+      COLOR_RED=""
+      COLOR_GREEN=""
+      COLOR_YELLOW=""
+      COLOR_NONE=""
+    fi
+}
+
+toggle_color # Set default to colors off
+
+if [ "$TSTOPTIONS" != "" ] ; then
+  set -- $TSTOPTIONS "@@" "$@"
+  DEFAULT_OPTIONS=1
+fi
 
 while [ "$#" -gt 0 ]; do
   case $1 in 
@@ -56,13 +78,16 @@ while [ "$#" -gt 0 ]; do
       cd $1
       shift ;;
 
-   -c | --color-off)
-      COLOR="--c"
-      COLOR_RED=""
-      COLOR_GREEN=""
-      COLOR_YELLOW=""
-      COLOR_NONE=""
-      shift ;;
+   @@)
+      DEFAULT_OPTIONS=0
+      shift
+      ;;
+
+   -c | --color)
+      toggle_color
+      if [ $DEFAULT_OPTIONS -eq 0 ] ; then COLOR="--c" ; fi
+      shift
+      ;;
 
     -o | --output)
       shift;
@@ -70,9 +95,13 @@ while [ "$#" -gt 0 ]; do
       OUTFILE=$1;
       shift ;;
 
-    --*) echo "Invalid option"; usage ;;
+    --*) echo "Invalid option $1"; usage ;;
 
-    +*|-*) break ;;
+    +*|-*) 
+        if [ $DEFAULT_OPTIONS -eq 0 ] ; then break ; fi
+        TAGS="$TAGS $1" #collect tags that may be in default options
+        shift
+        ;;
 
     *)  WILDCARD=$1
         shift
@@ -83,7 +112,7 @@ done
 
 echo "output: $OUTFILE ($WILDCARD)"
 echo "STIME `date`" > $OUTFILE
-find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f $COLOR $* ; done 2>> $OUTFILE
+find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f $COLOR $TAGS $* ; done 2>> $OUTFILE
 
 FAIL=`grep '^[0-9 ]*FAIL' $OUTFILE | wc -l`
 PASS=`grep '^[0-9 ]*PASS' $OUTFILE | wc -l`

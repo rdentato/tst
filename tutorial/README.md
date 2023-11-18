@@ -121,7 +121,7 @@ all the checks you wannt to perform on the function:
 #include "tst.h"
 #include "functions.h"
 
-tstrun("Factorials") {
+tstsuite("Factorials") {
   tstcheck(fact_0(1) == 1);
   tstcheck(fact_0(2) == 2);
   tstcheck(fact_0(3) == 6);
@@ -132,7 +132,7 @@ Once you compile and link it with the file where the `Factorial()` function is d
 an executable, say `t_fact` that, when runn, will execute all the tests. report the results:
 
 ```
------- FILE ▷ t_fact.c "Check Factorial"
+------ SUIT ▷ t_fact.c "Check Factorial"
      5 PASS│  fact(1) == 1
      6 PASS│  fact(2) == 2
      7 PASS│  fact(3) == 6
@@ -142,7 +142,7 @@ an executable, say `t_fact` that, when runn, will execute all the tests. report 
 The idea is to have a single executable file which defines a `run` of tests that will cover a
 logically related set of functions or will go over a specific use case.
 
-The `tstrun()` function will serve as `main()`: you don't need (and should not) define a `main()` function.
+The `tstsuite()` function will serve as `main()`: you don't need (and should not) define a `main()` function.
 
 <a id="failures"></a>
 
@@ -155,7 +155,7 @@ Let's do it:
 #include "tst.h"
 #include "functions.h"
 
-tstrun("Factorials") {
+tstsuite("Factorials") {
   tstcheck(fact_0(0) == 1); // Test edge case
   tstcheck(fact_0(1) == 1);
   tstcheck(fact_0(2) == 2);
@@ -165,7 +165,7 @@ tstrun("Factorials") {
 ```
 We would have got:
 ```
------- FILE ▷ t_fact_0_err.c "Check Factorial"
+------ SUIT ▷ t_fact_0_err.c "Check Factorial"
      5 FAIL│  fact_0(0) == 1
      6 PASS│  fact_0(1) == 1
      7 PASS│  fact_0(2) == 2
@@ -279,7 +279,7 @@ For example, let's write a full test run for a more complete version of the fact
 #include "tst.h"
 #include "functions.h"
 
-tstrun("Check Factorial") {
+tstsuite("Check Factorial") {
   tstcase("Edge case: 0") {
     tstcheck(fact(0) == 1); // 0! = 1
   }
@@ -304,7 +304,7 @@ tstrun("Check Factorial") {
 
 This will produce the following result:
 ```
------ FILE ▷ t_fact.c "Check Factorial"
+----- SUIT ▷ t_fact.c "Check Factorial"
     5 CASE┬── Edge case: 0
     6 PASS│  fact(0) == 1
     5     ╰── 0 FAIL | 1 PASS | 0 SKIP
@@ -498,10 +498,10 @@ exclude them for certain runs. For this you can create up to eight tags per
 run and switch them on/off.
 
 You specify the tags you want to use (up to eight) as additional parameter
-to the `tstrun()` function and check them with the `tsttag()` function:
+to the `tstsuite()` function and check them with the `tsttag()` function:
 
 ```C
-tstrun("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
+tstsuite("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
 {
   tstcase() {
     tstskipif(tsttag(TestDB) && !tsttag(SimpleRun)) {
@@ -582,7 +582,7 @@ Similarly:
    tst_check(x==0,"Not zero! %d", x);   // Check disabled
 ```
 
-You can also disable an entire test scenario changing `tstrun` into `tst_run()`.
+You can also disable an entire test scenario changing `tstsuite` into `tst_suite()`.
 
 
 <a id="split-tests"></a>
@@ -629,36 +629,33 @@ iterative implementation:
 <a id="command-line"></a>
 ## Command line options
 
-When a `tstrun` is compiled, it will define a main function that will accept the
+When a `tstsuite` is compiled, it will define a main function that will accept the
 the following options.
 
 ### Help
-Specifing `/h` as argument, you'll get a short help.
+Specifing `--help` as argument, you'll get a short help.
 
 If no tag is specified you'll get something similar to this:
 
 ```
   $ mytest ?
-  Test Scenario: "A run for my tests"
-  ./mytest /help | [/color-off] [/report-off]
+  Test suite: "A run for my tests"
+  ./mytest [--help] | [--color] [--return-err]
 ```
 
-The *Test Scenario* is the title you provided in the `tstrun()` function.
+The *Test Scenario* is the title you provided in the `tstsuite()` function.
 
 See below for more details on when there is any tag specified.
 
 ### Not Returning Errors
 
-By default, if a test fails, it will return 1 to signal that there has been one or more errors.
-This might be undesirable if, for example, the test is run in a script that could interrupt
-the execution of all the tests.
-
-You can avoid this by specifiying `=` as the first argument:
+By default test programs return 0 to ensure that they do not inadvertely stop a chain
+of tests (e.g. because a scripts stops). Instead, you can make it return an error (
+a non-zero value) if a test fails:
 
 ```bash
-  $ t_test /return-off
+  $ t_test --return-err
 ```
-so that `t_test` will always return 0 even if some tests may have failed.
 
 ### Handling tags
 
@@ -667,7 +664,7 @@ If you specified one or more tag, you will receive a help message like this:
 ```
   $ mytest ?
   Test Scenario: "Switching groups on and off"
-  ./mytest [/help | [/color-off] [/report-off] [+/-]tag ... ]
+  ./mytest [--help] [--color] [--return-err] [+/-]tag ... ]
   tags: TestDB DeepTest SimpleRun
 ```
 that helps you remember which tags you defined.
@@ -685,6 +682,35 @@ all tags except `SimpleRun`, you can execute the test as follows:
 ```
   $ mytest +* -SimpleRun
 ```
+### Colored messages
+If your terminal can handle ANSI sequences for colors, you can enable colored message
+with the `--color` option:
+```
+  $ mytest --color
+```
+will print in red the number of failed checks, in green the number of passed checks
+and in yellow the nummber of the skipped ones.
+
+Colors are off by default but you can make them on by default by settin up the `TSTOPTIONS`
+variable as described in the next section.
+
+### Setting defaults
+You can define default arguments by setting up the `TSTOPTIONS` shell variable.
+For example, after:
+
+```
+  export TSTOPTIONS="--color +NoDB"
+```
+
+executing:
+
+```
+  $ ./mytest
+```
+
+will result in the colored message enabled and the `NoDB` tag set.
+
+
 <a id="running-tests"></a>
 
 ## Running your tests
@@ -714,7 +740,7 @@ Usage:
 OPTIONS
   -h | --help                 this help
   -l | --list                 prints the list of available tests
-  -c | --color-off            turns off coloured messages
+  -c | --color                turns on/off coloured messages
   -d | --test-directory dir   cd to the directory dir with tests
   -w | --wildcard '*x[yz]'    specify a file pattern to match the tests to execute
   -o | --output filename      the name of the generated logfile

@@ -7,7 +7,7 @@ int f(int n, const char *s) {
   return 1;
 }
 
-tstrun("Data driven tests") {
+tstsuite("Data driven tests") {
   tstcase("Use static data") {
 
     struct {int n; const char *s;} tstdata[] = {

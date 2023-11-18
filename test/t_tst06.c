@@ -4,7 +4,7 @@
 #include "tst.h"
 
 
-tstrun("Data driven tests") {
+tstsuite("Data driven tests") {
   srand(time(0));
   tstcase("A random integer array in the range [-10 10]") {
     int tstdata[4]; // array size must be specified
@@ -14,7 +14,7 @@ tstrun("Data driven tests") {
           tstprintf("[%d] = %d\n",k,tstdata[k]);
        }
     }
-    tstsection( "Cehck 1") {
+    tstsection( "Check 1") {
       tstcheck (-10 <= tstcurdata && tstcurdata <= 10);
     }
     tstsection( "Check 2") {

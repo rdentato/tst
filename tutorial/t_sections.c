@@ -3,7 +3,7 @@
 
 int f(int n, const char *s) {return 1; }// Always pass 
 
-tstrun("Sections") {
+tstsuite("Sections") {
   int count = 0;
   tstcase("Sections") {
     int a;

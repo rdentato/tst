@@ -1,7 +1,7 @@
 #include "tst.h"
 #include "functions.h"
 
-tstrun("Check Factorial") {
+tstsuite("Check Factorial") {
   tstcheck(fact_0(0) == 1);
   int n = fact_0(0);
   tstcheck("factorial of 0" && (n == 1));
