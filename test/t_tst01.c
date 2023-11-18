@@ -3,7 +3,7 @@
 
 #include "tst.h"
 
-tstrun("Switching groups on and off",NoDB, FileOnly, SimpleRun)
+tstsuite("Switching groups on and off",NoDB, FileOnly, SimpleRun)
 {
   tstskipif(tsttag(NoDB) && !tsttag(SimpleRun)) {
      tstcheck("Test 1 (NoDB && !SimpleRun)")

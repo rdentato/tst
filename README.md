@@ -1,18 +1,22 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <img height="150" src="https://github.com/rdentato/tst/assets/48629/248f5856-13bd-4e35-8d9f-0b74a0ecb010"> <br/>
 # tst
-A vary simple, single-header, unit test framework for C (and C++). (Join us on [Discord](https://discord.gg/BqsZjDaUxg)!)
+A very simple, small, single-header, unit test framework for C (and C++).<br/>
+(Join us on our [Discord](https://discord.gg/BqsZjDaUxg) channel for queries and feedback)
 
 ## Introduction
 `tst` is a lightweight unit testing framework designed for C programs (but works for C++ as well). 
 It provides a suite of functionalities to define, group, and validate test cases, while offering utilities
 for expressive reporting and diagnostic messaging. With minimal syntax, `tst` fosters easy test integration into C projects.
 
-I never understood why some of the most common unit test frameworks had so many files and complex build.
+I never understood why some of the most common unit test frameworks had so many files and complex build dependencies so
+I decided to write a small (less than 300 lines of code), no-dependencies unit testing framework that still has most of the 
+feautures you can find in much more complex ones.
+
 If you want to use `tst`, just include `tst.h` and you're ready to write your test cases.
 
 Check the [**tutorial**](tutorial/) for a detailed description of how to use `tst` or the [**reference manual**](tutorial/reference.md)
-for a short description of each function.
+for a short description of each function.\
 
 Fell free to provide ideas, bugs, suggestions or even full Pull Requests if you feel inclined to do so!
 
@@ -33,7 +37,7 @@ any issue on using `tst.h` with your compiler, please let me know.
 ```c
 #include "tst.h"  // Ensure the tst framework is included
 
-tstrun("Primary Test Suite")
+tstsuite("Primary Test Suite")
 {    
     tstcase("Equality Checks %d, %d", 1, 1) {
       tstcheck(1 == 1, "Mismatch: %d != %d", 1, 1);
@@ -66,7 +70,7 @@ Compile and run the above program (no need for a `main()` function)
 to execute all the tests and generate a log like this:
 
 ```
------ FILE ▷ t_small_example.c "Primary Test Suite"
+----- SUIT ▷ t_small_example.c "Primary Test Suite"
     5 CASE┬── Equality Checks 1, 1
     6 PASS│  1 == 1
     7 FAIL├┬ 1 != 1
@@ -88,5 +92,5 @@ to execute all the tests and generate a log like this:
 
 There is no limitation on how you organize and run your tests.
 Just for the purpose of self-testing (and to provide an example on how you could 
-organize your testing workflow) the `tstrun` script (in the `src` directory) provides
-a convenient way to launch groups of tests and pass them argument.
+organize your testing workflow) the `tstrun` script in the `src` directory provides
+a convenient way to launch groups of tests and pass them arguments.

@@ -1,9 +1,9 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.5.4-rc
+//  SPDX-PackageVersion: 0.7.1-rc
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0005004C
+#define TST_VERSION 0x0007001C
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,12 +13,12 @@ extern "C" {
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#include <assert.h>
+#include <ctype.h>
 
 static volatile short tst_zero = 0;
-static short tst_result = 0;
-static short tst_color = 1;
-static short tst_report_err = 1;
+static short tst_result     = 0;
+static short tst_color      = 0;
+static short tst_report_err = 0;
 
 static int tst_pass = 0;
 static int tst_fail = 0;
@@ -28,7 +28,9 @@ static const char* tst_title = NULL;
 static const char *tst_str_red    = "\0\033[1;31m";
 static const char *tst_str_green  = "\0\033[0;32m";
 static const char *tst_str_yellow = "\0\033[0;33m";
+static const char *tst_str_cyan   = "\0\033[1;36m";
 static const char *tst_str_normal = "\0\033[0m";
+//static const char *tst_str_bold   = "\0\033[1m";
 
 const char *tst_str_skip      = "SKIP|  ";
 const char *tst_str_fail      = "FAIL|  ";
@@ -37,9 +39,9 @@ const char *tst_str_skip_tst  = "SKPT|,-(%s)";
 const char *tst_str_skip_end  = "    |`---";
 const char *tst_str_case      = "CASE,--";
 const char *tst_str_case_end  = "    `--- ";
-const char *tst_str_file      = "----- FILE >";
-const char *tst_str_file_end  = "^^^^^ RSLT > ";
-const char *tst_str_file_abr  = "^^^^^ ABRT > ";
+const char *tst_str_file      = "SUIT /";
+const char *tst_str_file_end  = "^^^^^ RSLT \\ ";
+const char *tst_str_file_abr  = "^^^^^ ABRT \\ ";
 const char *tst_str_clck      = "CLCK:  %ld %ss ";
 const char *tst_str_note      = "NOTE:";
 const char *tst_str_sctn      = "SCTN|,--";
@@ -98,41 +100,46 @@ static unsigned char tst_tags_val = 0x00; // All tags are "off" by default
 
 static inline int tst_tags_zero(); // tst_tags_zero() always returns 0 and is used just to avoid compiler warnings.
 
-#define TST_STR_HELP_NOTAGS "[--help] [--color-off] [--report-error] [--list]"
+#define TST_STR_HELP_NOTAGS "[--help] [--color] [--report-error] [--list]"
 #define TST_STR_HELP_TAGS   " [+/-]tag ... ]\ntags:" 
 
 static inline short tst_parse_tags(int argc, const char **argv, int ntags, const char **names) {
   unsigned char v;
   const char *arg;
-  short report_error = 0;
+  short report_error = tst_report_err;
   if (names[0][0] == '\0') ntags=tst_tags_zero(); 
+  if (*argv == NULL) return report_error;
   for (int n=0; n<argc; n++) {
     arg = argv[n];
-    v = 0xFF;
-    if ((arg[0] == '-') && (arg[1] == '-')) {
-      switch (arg[2]) {
-        case 'r': report_error = 1; break;
-        case 'c': tst_color = 0; break;
-        case 'h': fprintf(stderr,"Test suite: \"%s\"\n%s %s", tst_title, argv[0], TST_STR_HELP_NOTAGS);
-                  if (ntags>0) fputs(TST_STR_HELP_TAGS,stderr);
-                  goto prttags;
-        case 'l': fprintf(stderr,"%s \"%s\"", argv[0], tst_title);
-         prttags: for (int k=0; k<ntags; k++) fprintf(stderr," %s",names[k]);
-                  fputc('\n',stderr);
-                  exit(0);
+    while (*arg) { // Allow a single string to contain multiple options (e.g. "--color +NoDB")
+      v = 0xFF;
+      if ((arg[0] == '-') && (arg[1] == '-')) {
+        switch (arg[2]) {
+          case 'r': report_error = 1; break;
+          case 'c': tst_color ^= 1; break;
+          case 'h': fprintf(stderr,"Test suite: \"%s\"\n%s %s", tst_title, argv[0], TST_STR_HELP_NOTAGS);
+                    if (ntags>0) fputs(TST_STR_HELP_TAGS,stderr);
+                    goto prttags;
+          case 'l': fprintf(stderr,"%s \"%s\"", argv[0], tst_title);
+           prttags: for (int k=0; k<ntags; k++) fprintf(stderr," %s",names[k]);
+                    fputc('\n',stderr);
+                    exit(0);
+        }
+        goto nextarg;
       }
-      continue;
-    }
-    if (*arg == '-') {arg++; v=0x00;}
-    if (*arg == '+') {arg++; v=0xFF;}
-    if (*arg == '*') {tst_tags_val = v; continue;}
-    if (*arg == '\0') continue;
-  
-    for (int k=0; k<ntags; k++) {
-      if (strcmp(arg,names[k])==0) {
-        if (v) tst_tags_val |= (unsigned char)(1<<k);
-        else   tst_tags_val &= (unsigned char)(~(1<<k));
+      if (*arg == '-') {arg++; v=0x00;}
+      if (*arg == '+') {arg++; v=0xFF;}
+      if (*arg == '*') {tst_tags_val = v; goto nextarg;}
+      if (*arg == '\0') goto nextarg;
+    
+      for (int k=0; k<ntags; k++) {
+        if (strcmp(arg,names[k])==0) {
+          if (v) tst_tags_val |= (unsigned char)(1<<k);
+          else   tst_tags_val &= (unsigned char)(~(1<<k));
+        }
       }
+ nextarg: while(*arg && !isspace(*arg)) arg++;
+          while(*arg && isspace(*arg)) arg++;
     }
   }
   // Return 1 if errors are to be reported as program failure
@@ -153,19 +160,21 @@ static inline char *tst_time(void)
 #define tstrun_(tst_, title_,...) \
   tst_tags(0,__VA_ARGS__); void tst__run(int n); \
   int main(int argc, char **argv) { \
-    tst_title = title_; \
+    tst_title = getenv("TSTOPTIONS"); \
+    tst_report_err = (short)tst_parsetags(1,(const char **)&tst_title); \
     tst_report_err = (short)tst_parsetags(argc,(const char **)argv); \
+    tst_title = title_; \
     if (CLOCKS_PER_SEC > ((clock_t)1000000) + tst_zero) tst_clock_unit = "n"; \
     else if(CLOCKS_PER_SEC > ((clock_t)1000) + tst_zero) tst_clock_unit = "u"; \
     else tst_clock_unit = "m"; \
-    fprintf(stderr, "%s %s \"%s\" %s%s\n", tst_str_file, __FILE__, tst_title, tst_time(), (tst_?"":" (disabled)"));\
+    fprintf(stderr, "----- %s%s %s \"%s\" %s%s%s\n", tst_color+tst_str_cyan,tst_str_file, __FILE__, tst_title, tst_time(), tst_color+tst_str_normal,(tst_?"":" (disabled)"));\
     if (tst_) tst__run(tst_usestatic); \
     fputs(tst_str_file_end,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time());\
     return ((tst_fail > 0) * tst_report_err); \
   } void tst__run(int tst_n) 
 
-#define tstrun(title_,...)  tstrun_((!tst_zero), title_, __VA_ARGS__)
-#define tst_run(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
+#define tstsuite(title_,...)  tstrun_((!tst_zero), title_, __VA_ARGS__)
+#define tst_suite(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
 
 static short tst_vars[6] = {0}; // Ensures that `tstcheck` can be used outside a `tstcase` block.
 
@@ -179,18 +188,18 @@ static inline int tstfailed(void)  {return !tst_result;}
 static inline int tstpassed(void)  {return  tst_result;}
 static inline int tstskipped(void) {return (tst_result < 0);}
 
-#define tstcheck_(tst_a,tst_s,tst_r,...) \
+#define tstcheck_(tst_abrt,tst_str,tst_res,...) \
   do { \
-    tst_result = (short)(tst_skip_test? -1 : !!(tst_r)); \
+    tst_result = (short)(tst_skip_test? -1 : !!(tst_res)); \
     switch (tst_result) { \
       case -1: tst_skip++; tst_case_skip++; tst_prtln(tst_str_skip); fputs(tst_color+tst_str_yellow, stderr); break; \
       case  0: tst_fail++; tst_case_fail++; tst_prtln(tst_str_fail); fputs(tst_color+tst_str_red   , stderr); break; \
       case  1: tst_pass++; tst_case_pass++; tst_prtln(tst_str_pass); fputs(tst_color+tst_str_green , stderr); break; \
     } \
-    fprintf(stderr, "%s%s", tst_s, tst_str_normal+tst_color); \
+    fprintf(stderr, "%s%s", tst_str, tst_str_normal+tst_color); \
     if (tst_result == 0) { \
       fprintf(stderr," \"" __VA_ARGS__); fputc('"',stderr); \
-      if (tst_a)  { \
+      if (tst_abrt)  { \
         fputs(tst_str_file_abr,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time()); \
         exit(0);\
       } \

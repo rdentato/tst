@@ -3,7 +3,7 @@
 
 #include "tst.h"
 
-tstrun("Switching groups on and off",NoDB, FileOnly, SimpleRun)
+tstsuite("Switching groups on and off",NoDB, FileOnly, SimpleRun)
 {
   tstcheck("Test NoDB 0 (always)");
 

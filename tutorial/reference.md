@@ -67,7 +67,7 @@ Prints a formatted note in the log.
 
 ## Control structures
 
-### `tstrun(char *title [, tag1, tag2, ...]) { ... }`
+### `tstsuite(char *title [, tag1, tag2, ...]) { ... }`
 Defines the entry point for running tests and defines an optional set of tags up to eight.
 
 #### Parameters

@@ -1,6 +1,6 @@
 #include "tst.h"  // Ensure the tst framework is included
 
-tstrun("Primary Test Suite")
+tstsuite("Primary Test Suite")
 {    
     tstcase("Equality Checks %d, %d", 1, 1) {
       tstcheck(1 == 1, "Mismatch: %d != %d", 1, 1);
