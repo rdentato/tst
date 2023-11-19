@@ -1,9 +1,9 @@
 //  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.7.1-rc
+//  SPDX-PackageVersion: 0.7.2-rc
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0007001C
+#define TST_VERSION 0x0007002C
 
 #ifdef __cplusplus
 extern "C" {
@@ -160,10 +160,10 @@ static inline char *tst_time(void)
 #define tstrun_(tst_, title_,...) \
   tst_tags(0,__VA_ARGS__); void tst__run(int n); \
   int main(int argc, char **argv) { \
-    tst_title = getenv("TSTOPTIONS"); \
-    tst_report_err = (short)tst_parsetags(1,(const char **)&tst_title); \
-    tst_report_err = (short)tst_parsetags(argc,(const char **)argv); \
+    const char *tst_options=getenv("TSTOPTIONS"); \
     tst_title = title_; \
+    tst_report_err = (short)tst_parsetags(1,&tst_options); \
+    tst_report_err = (short)tst_parsetags(argc,(const char **)argv); \
     if (CLOCKS_PER_SEC > ((clock_t)1000000) + tst_zero) tst_clock_unit = "n"; \
     else if(CLOCKS_PER_SEC > ((clock_t)1000) + tst_zero) tst_clock_unit = "u"; \
     else tst_clock_unit = "m"; \
