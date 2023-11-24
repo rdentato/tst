@@ -43,7 +43,7 @@ all: $(TESTS)
 SRCDIR=../src
 
 runtest: all
-	@../src/tstrun 
+	@../tstrun 
 	@echo "EXPECTED 8 FAIL"
 
 .PRECIOUS: %.o
