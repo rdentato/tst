@@ -92,5 +92,5 @@ to execute all the tests and generate a log like this:
 
 There is no limitation on how you organize and run your tests.
 Just for the purpose of self-testing (and to provide an example on how you could 
-organize your testing workflow) the `tstrun` script in the `src` directory provides
-a convenient way to launch groups of tests and pass them arguments.
+organize your testing workflow) the `makefile` and the `tstrun` script in the `test` 
+directory provide a convenient way to launch groups of tests and pass them arguments.
