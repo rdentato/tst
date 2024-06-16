@@ -16,7 +16,7 @@ feautures you can find in much more complex ones.
 If you want to use `tst`, just include `tst.h` and you're ready to write your test cases.
 
 Check the [**tutorial**](tutorial/) for a detailed description of how to use `tst` or the [**reference manual**](tutorial/reference.md)
-for a short description of each function.\
+for a short description of each function.
 
 Fell free to provide ideas, bugs, suggestions or even full Pull Requests if you feel inclined to do so!
 
