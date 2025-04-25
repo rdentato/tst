@@ -1,6 +1,6 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <img height="150" src="https://github.com/rdentato/tst/assets/48629/248f5856-13bd-4e35-8d9f-0b74a0ecb010"> <br/>
-# tst
+# tst (v.0.7.3-rc)
 A very simple, small, single-header, unit test framework for C (and C++).<br/>
 (Join us on our [Discord](https://discord.gg/BqsZjDaUxg) channel for queries and feedback)
 
