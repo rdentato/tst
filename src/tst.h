@@ -1,9 +1,19 @@
-//  SPDX-FileCopyrightText: © 2023 Remo Dentato <rdentato@gmail.com>
+//  SPDX-FileCopyrightText: © 2023 Remo Dentato (rdentato@gmail.com)
 //  SPDX-License-Identifier: MIT
-//  SPDX-PackageVersion: 0.7.3-rc
+//  SPDX-PackageVersion: 0.7.4-rc
 
 #ifndef TST_VERSION
-#define TST_VERSION 0x0007003C
+#define TST_VERSION 0x0007004C
+
+#ifdef _MSC_VER
+  /* Microsoft cl compiler */
+  #pragma warning(disable:4100)
+  #pragma warning(disable:4189)
+  #pragma warning(disable:4152)
+  #pragma warning(disable:4244)
+  #pragma warning(disable:4459)
+  #pragma warning(disable:4996)  
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +24,7 @@ extern "C" {
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 static volatile short tst_zero = 0;
 static short tst_result     = 0;
@@ -158,7 +169,7 @@ static inline char *tst_time(void)
 }
 
 #define tstrun_(tst_, title_,...) \
-  tst_tags(0,__VA_ARGS__); void tst__run(int n); \
+  tst_tags(0,__VA_ARGS__); void tst__run(); \
   int main(int argc, char **argv) { \
     const char *tst_options=getenv("TSTOPTIONS"); \
     tst_title = title_; \
@@ -168,10 +179,11 @@ static inline char *tst_time(void)
     else if(CLOCKS_PER_SEC > ((clock_t)1000) + tst_zero) tst_clock_unit = "u"; \
     else tst_clock_unit = "m"; \
     fprintf(stderr, "----- %s%s %s \"%s\" %s%s%s\n", tst_color+tst_str_cyan,tst_str_file, __FILE__, tst_title, tst_time(), tst_color+tst_str_normal,(tst_?"":" (disabled)"));\
-    if (tst_) tst__run(tst_usestatic); \
+    if (tst_) tst__run(); \
+    tst_zero &= tst_usestatic; \
     fputs(tst_str_file_end,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time());\
     return ((tst_fail > 0) * tst_report_err); \
-  } void tst__run(int tst_n) 
+  } void tst__run() 
 
 #define tstsuite(title_,...)  tstrun_((!tst_zero), title_, __VA_ARGS__)
 #define tst_suite(title_,...) tstrun_(( tst_zero), title_, __VA_ARGS__)
@@ -179,7 +191,7 @@ static inline char *tst_time(void)
 static short tst_vars[6] = {0}; // Ensures that `tstcheck` can be used outside a `tstcase` block.
 
 // This is only used to avoid that the compiler complains about unused static variables.
-#define tst_usestatic ((  tst_result & tst_case_pass & tst_case_fail & tst_case_skip \
+#define tst_usestatic ((short)(  tst_result & tst_case_pass & tst_case_fail & tst_case_skip \
                         & tst_vars[0] & tstdata[0] & (int)tstelapsed))
 
 #define tst(x) (tst_result = (short)(!!(x)))
@@ -194,21 +206,22 @@ static inline int tstskipped(void) {return (tst_result < 0);}
     switch (tst_result) { \
       case -1: tst_skip++; tst_case_skip++; tst_prtln(tst_str_skip); fputs(tst_color+tst_str_yellow, stderr); break; \
       case  0: tst_fail++; tst_case_fail++; tst_prtln(tst_str_fail); fputs(tst_color+tst_str_red   , stderr); break; \
-      case  1: tst_pass++; tst_case_pass++; tst_prtln(tst_str_pass); fputs(tst_color+tst_str_green , stderr); break; \
+      case  1: tst_pass++; tst_case_pass++; if (tst_abrt<0) break; tst_prtln(tst_str_pass); fputs(tst_color+tst_str_green , stderr); break; \
     } \
-    fprintf(stderr, "%s%s", tst_str, tst_str_normal+tst_color); \
+    if (tst_result == 0 || tst_abrt >=0) fprintf(stderr, "%s%s", tst_str, tst_str_normal+tst_color); \
     if (tst_result == 0) { \
       fprintf(stderr," \"" __VA_ARGS__); fputc('"',stderr); \
-      if (tst_abrt)  { \
+      if (tst_abrt == 1)  { \
         fputs(tst_str_file_abr,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time()); \
         exit(0);\
       } \
     } \
-    fputc('\n', stderr); \
+    if (tst_result == 0 || tst_abrt >=0) fputc('\n', stderr); \
   } while(0);
 
-#define tstcheck(t_,...)  tstcheck_(tst_zero,#t_,t_,__VA_ARGS__)
-#define tstassert(t_,...) tstcheck_(!tst_zero,#t_,t_,__VA_ARGS__)
+#define tstcheck(t_,...)     tstcheck_(0,#t_,t_,__VA_ARGS__)
+#define tstassert(t_,...)    tstcheck_(1,#t_,t_,__VA_ARGS__)
+#define tstcheckfail(t_,...) tstcheck_(-1,#t_,t_,__VA_ARGS__)
 
 #define tst_skip_test tst_vars[5]
 #define tstskipif(tst_) \
