@@ -10,6 +10,7 @@
   - [Assertions and Checks](#assertions-and-checks)
     - [`tstcheck`](#tstcheck)
     - [`tstassert`](#tstassert)
+    - [`tstexpect`](#tstexpect)
   - [Conditional Execution](#conditional-execution)
     - [`tstskipif`](#tstskipif)
     - [Tags: `tsttag`](#tags-tsttag)
@@ -48,16 +49,61 @@ tstsuite(title, [Tag1, Tag2, …]);
 tst_suite(title, [Tag1, Tag2, …]); // **disabled** (compile-time skip)  
 ```
 
-- **Purpose**: Declares the test suite and prints suite header.  To be used in place of `mani()`
+- **Purpose**: Declares the test suite, defines `main()`, and prints suite header
 - **Parameters**:  
   - `title` – string shown as the suite name.  
   - Optional up to eight tag identifiers for conditional execution.  
 - **Behavior**:  
   - `tstsuite` → suite **enabled**  
   - `tst_suite` → suite **disabled** (compile-time skip)  
-- **Example**:
+  - Creates a `main()` function that parses command-line options and runs tests.
+  - Prints suite start/end with timestamps and final PASS/FAIL/SKIP counts.
+- **Examples**:
   ```c
-  tstsuite("Math Library Tests", Slow, DB);
+  // Simple suite without tags
+  #include "tst.h"
+  
+  tstsuite("String Functions") {
+    tstcase("strlen tests") {
+      tstcheck(strlen("hello") == 5);
+      tstcheck(strlen("") == 0);
+    }
+    
+    tstcase("strcmp tests") {
+      tstcheck(strcmp("abc", "abc") == 0);
+      tstcheck(strcmp("abc", "def") < 0);
+    }
+  }
+  
+  // Suite with tags for selective execution
+  #include "tst.h"
+  
+  tstsuite("Database Tests", SlowTests, RequiresDB, Integration) {
+    tstskipif(tsttag(RequiresDB) && !db_available()) {
+      tstcase("Connection test") {
+        tstcheck(db_connect() == 0);
+        tstcheck(db_ping() == 0);
+      }
+    }
+    
+    tstskipif(tsttag(SlowTests)) {
+      tstcase("Large dataset") {
+        tstclock("Insert 10000 records") {
+          for (int i = 0; i < 10000; i++)
+            db_insert(i);
+        }
+        tstcheck(db_count() == 10000);
+      }
+    }
+  }
+  
+  // Disabled suite (useful during development)
+  tst_suite("Work in Progress Tests") {
+    // This entire suite is disabled at compile time
+    tstcase("Experimental feature") {
+      tstcheck(new_feature() == 0);
+    }
+  }
   ```
 
 
@@ -68,9 +114,38 @@ tst_suite(title, [Tag1, Tag2, …]); // **disabled** (compile-time skip)
 ### `tstcase`
 
 ```c
-tstcase(description);
+tstcase(description, ...);
 tst_case(...); // **disabled** (compile-time skip)  
 ```
+
+- **Purpose**: Starts a new test case within the suite.  
+- **Parameters**:  
+  - `description` – textual label for grouping related checks (supports `printf`-style formatting).  
+  - Optional additional arguments for formatting.  
+- **Behavior**:  
+  - Prints a "CASE" header.  
+  - Reports partial PASS/FAIL/SKIP counts at the end of the block.  
+  - `tst_case` → case **disabled** (compile-time skip)  
+  - **Can be nested** inside other `tstcase` blocks for hierarchical organization.  
+- **Example**:
+  ```c
+  tstcase("Edge Conditions") {
+    tstcheck(x == 0);
+    tstcheck(y != NULL);
+  }
+  
+  tstcase("Testing value %d", test_val) {
+    tstcheck(test_val > 0);
+  }
+  
+  // Nested cases
+  tstcase("Outer case") {
+    int a = 5;
+    tstcase("Inner case with a=%d", a) {
+      tstcheck(a == 5);
+    }
+  }
+  ```
 
 - **Purpose**: Starts a new test case within the suite.  
 - **Parameters**:  
@@ -92,9 +167,39 @@ tst_case(...); // **disabled** (compile-time skip)
 ### `tstsection`
 
 ```c
-tstsection(description);
+tstsection(description, ...);
 tst_section(description); // **disabled** (compile-time skip)  
 ```
+
+- **Purpose**: Defines a subsection inside a `tstcase`, isolating a subset of checks.  
+- **Parameters**:  
+  - `description` – label printed before the section's checks (supports `printf`-style formatting).  
+  - Optional additional arguments for formatting.  
+- **Behavior**:  
+  - Runs setup code before each section.  
+  - Supports iterating over a `tstdata` array for data-driven tests.  
+  - Each section re-executes the setup code from the beginning of the enclosing `tstcase`.  
+- **Example**:
+  ```c
+  int a = 5;
+  tstcase("Value Updates") {
+    tstsection("Set to 9") {
+      tstcheck(a == 5);  // Setup runs before each section
+      a = 9;
+      tstcheck(a == 9);
+    }
+    tstsection("Set to 8") {
+      tstcheck(a == 5);  // a is reset to 5 again
+      a = 8;
+      tstcheck(a == 8);
+    }
+  }
+  
+  // With formatting
+  tstsection("Testing with value=%d", test_val) {
+    tstcheck(process(test_val) == expected);
+  }
+  ```
 
 - **Purpose**: Defines a subsection inside a `tstcase`, isolating a subset of checks.  
 - **Parameters**:  
@@ -138,9 +243,19 @@ tst_check(...); // **disabled** (compile-time skip)
   - **PASS** if `expr` is true.  
   - **FAIL** if false (prints `expr` and formatted message).  
   - **SKIP** if within a `tstskipif` block.  
+  - **Can be used outside `tstcase`** blocks (at suite level).  
 - **Example**:
   ```c
   tstcheck(fact(0) == 1, "Expected 1, got %d", fact(0));
+  
+  // Can be used at suite level
+  tstsuite("My Suite") {
+    tstcheck(initialization() == 0);  // Suite-level check
+    
+    tstcase("Test 1") {
+      tstcheck(test1() == 1);  // Case-level check
+    }
+  }
   ```
 
 
@@ -158,6 +273,27 @@ tst_assert(expr, fmt, ...); // **disabled** (compile-time skip)
 - **Example**:
   ```c
   tstassert(ptr = malloc(n), "Allocation failed for %d bytes", n);
+  ```
+
+
+---
+
+### `tstexpect`
+
+```c
+tstexpect(expr, fmt, ...);
+tst_expect(expr, fmt, ...); // **disabled** (compile-time skip)  
+```
+
+- **Purpose**: Similar to `tstcheck`, but only prints output on **failure** (silent on PASS).  
+- **Use Case**: High-volume assertions where you only want to see failures.  
+- **Behavior**:  
+  - **PASS** is counted but not printed.  
+  - **FAIL** prints the expression and formatted message.  
+  - **SKIP** if within a `tstskipif` block.  
+- **Example**:
+  ```c
+  tstexpect(x > 0, "Expected positive value, got %d", x);
   ```
 
 
@@ -259,12 +395,16 @@ tst_clock(fmt, ...);
 ### `tstelapsed`
 
 ```c
-clock_t tstelapsed(void);
+#define tstelapsed() tstelapsed
 ```
 
-- **Purpose**: Retrieve the last measured clock ticks from `tstclock`.  
+- **Purpose**: Access the last measured clock ticks from `tstclock`.  
+- **Type**: `clock_t` variable (accessed as a macro).  
 - **Example**:
   ```c
+  tstclock("Benchmark") {
+    // ... code to time ...
+  }
   clock_t clk = tstelapsed();
   ```
 
@@ -289,14 +429,40 @@ tstnote(fmt, ...);
 ### `tstouterr`
 
 ```c
-tstouterr(fmt, ...);
+tstouterr(fmt, ...) {
+  // code block
+}
 ```
 
-- **Purpose**: Emit a block of diagnostic output delimited by markers.  
-- **Use Case**: Capturing multi-line text for comparison.  
-- **Example**:
+- **Purpose**: Emit a block of diagnostic output delimited by markers (`<<<<<` and `>>>>>`).  
+- **Use Case**: Capturing multi-line text for comparison or displaying generated data.  
+- **Behavior**: Prints opening marker, executes the block, then prints closing marker.  
+- **Examples**:
   ```c
   tstouterr("Output was:\n%s", result_buf);
+  
+  // With code block
+  tstouterr("Generated data:") {
+    for (int k=0; k<4; k++) {
+      tstdata[k] = rand() & 0x0F;
+      tstprintf("[%d] = %d\n", k, tstdata[k]);
+    }
+  }
+  ```
+
+---
+
+### `tstprintf`
+
+```c
+tstprintf(fmt, ...);
+```
+
+- **Purpose**: Print formatted output to stderr (same as `fprintf(stderr, ...)`).  
+- **Use Case**: Custom diagnostic messages during test execution.  
+- **Example**:
+  ```c
+  tstprintf("Debug: x=%d, y=%d\n", x, y);
   ```
 
 
@@ -304,16 +470,66 @@ tstouterr(fmt, ...);
 
 ## Data-Driven Tests
 
-Within a `tstcase`, you can define a static array:
+Within a `tstcase`, you can define an array named `tstdata`:
 
 ```c
 Type tstdata[] = { … };
 ```
 
-- **`tstcurdata`** – current element inside `tstsection` loops.  
-- **`tst_data_size`** – number of elements in `tstdata`.  
+- **`tstcurdata`** – expands to `tstdata[tst_data_count]`, the current element inside `tstsection` loops.  
+- **`tst_data_size`** – expands to `(int)(sizeof(tstdata)/sizeof(tstdata[0]))`, the number of elements.  
 
-Sections automatically iterate over all `tstdata` elements. 
+Each `tstsection` automatically iterates over all `tstdata` elements. The iteration variable `tst_data_count` goes from `0` to `tst_data_size - 1`.
+
+**Notes**:
+- The array name **must** be `tstdata`.
+- Can be any type (int, struct, etc.).
+- The `volatile` keyword is optional (used internally by the framework, not required in user code).
+- For dynamic/random data, populate the array before the section.
+
+**Examples**:
+
+Static integer data:
+```c
+tstcase("Factorial Tests") {
+  int tstdata[] = {0, 1, 5, 10, 100};
+  
+  tstsection("Non-negative inputs") {
+    int n = tstcurdata;
+    tstcheck(factorial(n) >= n, "factorial(%d) should be >= %d", n, n);
+  }
+}
+```
+
+Struct data:
+```c
+tstcase("String tests") {
+  struct {int n; const char *s;} tstdata[] = {
+    {123, "hello"},
+    {456, "world"},
+    {789, "test"}
+  };
+  
+  tstsection("Process data") {
+    tstnote("Checking <%d,%s>", tstcurdata.n, tstcurdata.s);
+    tstcheck(process(tstcurdata.n, tstcurdata.s) == 0);
+  }
+}
+```
+
+Random data:
+```c
+tstcase("Random values in range") {
+  srand(time(0));
+  int tstdata[4];
+  for (int k=0; k<4; k++) tstdata[k] = rand() % 100;
+  
+  tstsection("Check range") {
+    tstnote("Checking: %d", tstcurdata);
+    tstcheck(tstcurdata >= 0 && tstcurdata < 100);
+  }
+}
+``` 
 
 ---
 

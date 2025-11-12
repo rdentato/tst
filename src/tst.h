@@ -221,7 +221,7 @@ static inline int tstskipped(void) {return (tst_result < 0);}
 
 #define tstcheck(t_,...)     tstcheck_(0,#t_,t_,__VA_ARGS__)
 #define tstassert(t_,...)    tstcheck_(1,#t_,t_,__VA_ARGS__)
-#define tstcheckfail(t_,...) tstcheck_(-1,#t_,t_,__VA_ARGS__)
+#define tstexpect(t_,...)    tstcheck_(-1,#t_,t_,__VA_ARGS__)
 
 #define tst_skip_test tst_vars[5]
 #define tstskipif(tst_) \

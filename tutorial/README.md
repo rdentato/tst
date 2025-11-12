@@ -1,34 +1,36 @@
 <a id="top"></a>
 # Tutorial
 
-Following the examples of other testing framework, this tutorial wiil guide you through the setup
-and the steps need to use `tst`.
+Following the examples of other testing frameworks, this tutorial will guide you through the setup
+and the steps needed to use `tst`.
 
-A word of caution. The functions offered here are simple but rather flexible and allow you to 
-create very complicated and intricated test cases. Please don't! Besides its purpose of ensuring
-the correctness of the system, the test suite also has a great value as an example on how to use
+A word of caution: The functions offered here are simple but rather flexible and allow you to 
+create very complicated and intricate test cases. Please don't! Besides its purpose of ensuring
+the correctness of the system, the test suite also has great value as an example of how to use
 the various functions. Try to write the tests as cleanly and simply as possible and you'll save 
-the day of those that will have to understand the code later.
+the day for those who will have to understand the code later.
 
 **Contents**<br>
 [Setting tst Up](#setup)<br>
 [A Minimal Example](#min-example)<br>
-[Handling Failure](#)<br>
+[Handling Failure](#failures)<br>
 [Assertions](#assertions)<br>
 [On the Expression to Check](#check-expression)<br>
-[Structuring Tests Using `tstcase`](#testcase)<br>
+[Structuring Tests Using `tstcase`](#tstcase)<br>
 [Sections](#sections)<br>
 [Data Driven Tests](#data-driven)<br>
 [Conditional Test Execution (and Tagging)](#conditional)<br>
-[Disabling tests at compile time](#disabling)<br>
+[Disabling Tests at Compile Time](#disabling)<br>
 [Split Tests](#split-tests)<br>
+[Checking Times](#clock)<br>
+[Informational Output](#info-output)<br>
 [Command Line Options](#command-line)<br>
-[Running your tests](#running-tests)<br>
+[Running Your Tests](#running-tests)<br>
 
 <a id=setup></a>
 ## Integrating `tst` into Your Project
 
-There is no contstraint on which build system you use as `tst` is a single header library.
+There is no constraint on which build system you use as `tst` is a single header library.
 You place the file `tst.h` in a location that is in your include path and just `#include` it.
 
 However, if you use `make` as your build tool, you can benefit of the examples provided in the
@@ -94,12 +96,12 @@ By setting up a dedicated `test` directory and leveraging the provided `makefile
 
 <a id="min-example"></a>
 
-## A minimal example.
+## A minimal example
 
 Let's define a scenario for our examples: you have a library of functions defined in file `functions.c`
-whose prototypes are also in `functions.h` and you want to properly test them to ensure their correctness.
+whose prototypes are in `functions.h` and you want to properly test them to ensure their correctness.
 
-You'll find the code in the `test` directory.
+You'll find the example code in this `tutorial` directory.
 
 The first function we'll look at is the one to calculate the factorial of a number:
 (Note: There will be further versions of this function along the tutorial, they will be numbered
@@ -115,7 +117,7 @@ int fact_0(int n)
 ```
 
 To write test cases for this function, you will create a separate file called, say, `t_fact_0.c` with
-all the checks you wannt to perform on the function:
+all the checks you want to perform on the function:
 
 ```c
 #include "tst.h"
@@ -129,7 +131,7 @@ tstsuite("Factorials") {
 }
 ```
 Once you compile and link it with the file where the `Factorial()` function is defined, you'll get
-an executable, say `t_fact` that, when runn, will execute all the tests. report the results:
+an executable, say `t_fact` that, when run, will execute all the tests and report the results:
 
 ```
 ------ SUIT ▷ t_fact.c "Check Factorial"
@@ -139,16 +141,16 @@ an executable, say `t_fact` that, when runn, will execute all the tests. report 
      8 PASS│  fact(5) == 120
 ^^^^^^ RSLT ▷ 0 FAIL | 4 PASS | 0 SKIP
 ```
-The idea is to have a single executable file which defines a `run` of tests that will cover a
+The idea is to have a single executable file which defines a "run" of tests that will cover a
 logically related set of functions or will go over a specific use case.
 
-The `tstsuite()` function will serve as `main()`: you don't need (and should not) define a `main()` function.
+The `tstsuite()` macro will generate `main()`: you don't need (and should not) define a `main()` function.
 
 <a id="failures"></a>
 
 ## Handling failures
 If you looked at the `fact_0()` function in the previous section, you may have noticed that there is, actually, a bug in it.
-We didn't detected it becauses we failed to check for one of the edge case: 0! = 1.
+We didn't detect it because we failed to check for one of the edge cases: 0! = 1.
 Let's do it:
 
 ```c
@@ -190,7 +192,7 @@ and we would have got:
 
 I find it bothersome to specify a message for every check. After all, most of the time
 the checks will always pass. I usually only add messages when a check fails and it's
-not obviuos why.
+not obvious why.
 Of course, when the message is there I'd leave it for the next run; there's no need
 to remove it.
 
@@ -202,7 +204,7 @@ Assertions are a stronger form of checking. For example, if the following test f
 ```C
 tstassert(ptr = malloc(n),"Out of memory (requested: %d)",n);
 ```
-the program will be aborted as there's little meaning in continue testing when the memory is exausted.
+the program will be aborted as there's little meaning in continuing to test when the memory is exhausted.
 
 The section on conditional execution provides more information on how to handle failures that are not
 critical and would allow other tests to be executed.
@@ -267,8 +269,8 @@ Which contains a clear indication of what the test was about.
 
 ## Structuring tests using `tstcase`
 
-Within a test run, which is supposed to cover a logically meaniful scenario, you 
-may want to define multiple *test cases* whose checks are tightely related.
+Within a test run, which is supposed to cover a logically meaningful scenario, you 
+may want to define multiple *test cases* whose checks are tightly related.
 
 The usefulness of `tstcase` is that it collects partial results and will allow you
 to focus on groups of tests rather than having to consider all the tests at once.
@@ -403,7 +405,7 @@ with `malloc()`/`free()`, or connecting to a Database or to a network server.
 ## Data driven tests
 
 Another feature of `tstsection`s is that they can be executed on a given array of data.
-You define an array named `tstdata` within your `tstcase` andaccess the current data
+You define an array named `tstdata` within your `tstcase` and access the current data
 element with `tstcurdata`. For example:
 
 ``` C
@@ -444,8 +446,8 @@ Note that, considering how `tstsection`s are executed, you can do something like
     }
   }
 ```
-The `"first check"` section will be executed for each element of the `tstdata` array
-and the the `"Second check"` section will be executed for each element of the array.
+The `"First check"` section will be executed for each element of the `tstdata` array,
+and then the `"Second check"` section will be executed for each element of the array.
 
 This can also be used for *fuzzing* (i.e. execute many tests with random data):
 
@@ -546,15 +548,15 @@ you can easily specify which tags to enable by setting the `TSTTAGS` variable:
 
 ## Disabling tests at compile time
 
-There are cases when you may want to remove some test cases form your test suite
+There are cases when you may want to remove some test cases from your test suite
 but you do not want to remove them from the code because they might be useful 
 later.
 
 A typical example is if some feature is undergoing some major rewriting that would
 make your tests useless until all the new code is completed.
 
-Another one is when you want to focus on certain tests for debugging purpose and
-want to create a smaller log for making easeier understanding what went wrong.
+Another one is when you want to focus on certain tests for debugging purposes and
+want to create a smaller log to make it easier to understand what went wrong.
 
 You might handle this with some `#ifdef` in your code or by defining ad hoc tags
 (see previous section) but this seems pretty annoying to me.
@@ -588,7 +590,7 @@ You can also disable an entire test scenario changing `tstsuite` into `tst_suite
 <a id="split-tests"></a>
 
 ## Split tests
-Usually the `tstcheck()` function is enough to handle the test results but there might be cases when you want to perform some more actions depending on the fact that the test passed or not.
+Usually the `tstcheck()` function is enough to handle the test results, but there might be cases when you want to perform additional actions depending on whether the test passed or not.
 
 For this there are the following functions:
 
@@ -601,30 +603,130 @@ Example:
 ```C
    tstcheck(x != 3); // Perform the test
    if (tstpassed()) {
-      // Do domething
+      // Do something specific on pass
+      printf("Test passed, x = %d\n", x);
    }
 
    tst(z > 0); // Perform the test but does not report it in the log
    if (tstfailed()) {
-
+      // Handle the failure
+      cleanup_resources();
    }
 ```
 Note that `tstpassed()` and `tstfailed()` report the result of the latest check.
+
+**Tip**: Use `tst()` instead of `tstcheck()` when you want to test a condition but handle 
+the result manually without automatic logging. This is useful for complex conditional logic.
 
 <a id="clock"></a>
 ## Checking times
 
 It may be useful, sometimes, to get an idea of how much time is spent in one particular piece of code.
 For example, you may want to understand which implementation of a given function performs better.
-The function `tstclock()` can help you in that measuring the processor time spent between the start and
+The `tstclock()` macro can help you by measuring the processor time spent between the start and
 the end of a block of code.
 
-Here an example to check that the recursive implementation of the factorial is slower than the 
+Here's an example to check that the recursive implementation of the factorial is slower than the 
 iterative implementation:
 
 ```C
+#include "tst.h"
+#include "functions.h"
 
+tstsuite("Check Factorial Speed")
+{
+  clock_t recursive_elapsed = 0;
+  clock_t iterative_elapsed = 0;
+
+  int recursive_result = 0;
+  int iterative_result = 0;
+
+  const int times = 100000;
+
+  tstclock("Recursive") {
+    for (int k=0; k<times; k++)
+      recursive_result = fact_recursive(12);
+  }
+  recursive_elapsed = tstelapsed();
+  tstcheck(recursive_result != 0,"Expect non 0 got: %d", recursive_result);
+
+  tstclock("Iterative") {
+    for (int k=0; k<times; k++)
+      iterative_result = fact_iterative(12);
+  }
+  iterative_elapsed = tstelapsed();
+  tstcheck(iterative_result != 0);
+
+  tstcase("Check performance") {
+    tstcheck(recursive_result  == iterative_result);
+    tstcheck(recursive_elapsed >= iterative_elapsed, 
+             "Recursive (%ld) should be slower than iterative (%ld)", 
+             recursive_elapsed, iterative_elapsed);
+  }
+}
 ```
+
+The `tstclock()` block will automatically print the elapsed time when the block ends.
+You can also retrieve the elapsed time using `tstelapsed()` to perform additional checks or comparisons.
+
+**Note**: The timing uses `clock()` from the standard library, which measures CPU time, not wall-clock time.
+The time unit displayed (nanoseconds, microseconds, or milliseconds) is automatically determined based on
+`CLOCKS_PER_SEC`.
+
+<a id="info-output"></a>
+## Informational Output
+
+While running tests, you may want to print additional information to help with debugging or to document
+what the test is doing. `tst` provides several macros for this purpose.
+
+### `tstnote` - Simple Notes
+
+Use `tstnote()` to print informational messages during test execution:
+
+```C
+tstnote("Testing Complete. Review for any FAIL flags.");
+tstnote("Checking data: n=%d, s=%s", data.n, data.s);
+```
+
+This is useful for adding context to your tests without affecting the test results.
+
+### `tstprintf` - Direct Output
+
+For more control, you can use `tstprintf()` which is equivalent to `fprintf(stderr, ...)`:
+
+```C
+tstprintf("Debug: x=%d, y=%d\n", x, y);
+```
+
+### `tstouterr` - Delimited Output Blocks
+
+Use `tstouterr()` to print a block of output with clear delimiters (`<<<<<` and `>>>>>`):
+
+```C
+tstouterr("Generated data:") {
+  for (int k=0; k<4; k++) {
+    tstdata[k] = rand() & 0x0F;
+    tstprintf("[%d] = %d\n", k, tstdata[k]);
+  }
+}
+```
+
+This is particularly useful when you want to capture multi-line output for later analysis.
+
+### `tstexpect` - Silent Passing Checks
+
+Sometimes you have many checks where you only care about failures. Use `tstexpect()` instead of `tstcheck()`:
+
+```C
+// This will only print output if it fails
+tstexpect(x > 0, "Expected positive value, got %d", x);
+
+// Compare with tstcheck which always prints
+tstcheck(y > 0, "Expected positive value, got %d", y);
+```
+
+The `tstexpect()` macro still counts PASS/FAIL/SKIP like `tstcheck()`, but only produces output on failure.
+This keeps your test logs cleaner when you have hundreds or thousands of assertions.
 
 <a id="command-line"></a>
 ## Command line options
@@ -638,33 +740,35 @@ Specifing `--help` as argument, you'll get a short help.
 If no tag is specified you'll get something similar to this:
 
 ```
-  $ mytest ?
+  $ mytest --help
   Test suite: "A run for my tests"
-  ./mytest [--help] | [--color] [--return-err]
+  ./mytest [--help] [--color] [--report-error] [--list]
 ```
 
 The *Test Scenario* is the title you provided in the `tstsuite()` function.
 
 See below for more details on when there is any tag specified.
 
-### Not Returning Errors
+### Returning Errors
 
-By default test programs return 0 to ensure that they do not inadvertely stop a chain
-of tests (e.g. because a scripts stops). Instead, you can make it return an error (
-a non-zero value) if a test fails:
+By default test programs return 0 to ensure that they do not inadvertently stop a chain
+of tests (e.g., when running in a script). However, you can make it return an error 
+(a non-zero value) if a test fails using the `--report-error` option:
 
 ```bash
-  $ t_test --return-err
+  $ t_test --report-error
 ```
+
+This is useful in CI/CD pipelines where you want the build to fail if tests fail.
 
 ### Handling tags
 
 If you specified one or more tag, you will receive a help message like this:
 
 ```
-  $ mytest ?
-  Test Scenario: "Switching groups on and off"
-  ./mytest [--help] [--color] [--return-err] [+/-]tag ... ]
+  $ mytest --help
+  Test suite: "Switching groups on and off"
+  ./mytest [--help] [--color] [--report-error] [--list] [+/-]tag ...
   tags: TestDB DeepTest SimpleRun
 ```
 that helps you remember which tags you defined.
@@ -691,8 +795,20 @@ with the `--color` option:
 will print in red the number of failed checks, in green the number of passed checks
 and in yellow the nummber of the skipped ones.
 
-Colors are off by default but you can make them on by default by settin up the `TSTOPTIONS`
+Colors are off by default but you can make them on by default by setting up the `TSTOPTIONS`
 variable as described in the next section.
+
+### Listing Suite Information
+
+Use `--list` to display the test suite title and available tags:
+
+```bash
+  $ mytest --list
+  mytest "Switching groups on and off"
+  tags: TestDB DeepTest SimpleRun
+```
+
+This is useful for documentation or when you need to remember what tags are available.
 
 ### Setting defaults
 You can define default arguments by setting up the `TSTOPTIONS` shell variable.
