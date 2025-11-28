@@ -4,7 +4,7 @@
 
 TST is a lightweight, header-only C testing framework designed for simplicity, flexibility, and zero dependencies. It enables developers to create organized test suites with minimal setup, clear output formatting, and powerful features for data-driven testing, performance measurement, and selective test execution.
 
-**Version:** 0.7.4-rc  
+**Version:** 0.8.1-beta  
 **License:** MIT  
 **Language:** C (C++ compatible)
 
@@ -16,9 +16,9 @@ TST is a lightweight, header-only C testing framework designed for simplicity, f
 - **Fuzzing Support** - Easy random test data generation
 - **Performance Timing** - Built-in CPU time measurement
 - **Selective Execution** - Tag-based filtering and conditional skipping
-- **Flexible Output** - Structured logs with optional color coding
+- **Flexible Output** - Structured logs for easy parsing
 - **Cross-Platform** - Works on Linux, macOS, Windows (with any C compiler)
-- **Nested Organization** - Test cases, sections, and hierarchical structure
+- **Hierarchical Organization** - Test cases and sections for structured testing
 
 ## Table of Contents
 
@@ -31,13 +31,14 @@ TST is a lightweight, header-only C testing framework designed for simplicity, f
 7. [Control Flow and Conditional Execution](#control-flow-and-conditional-execution)
 8. [Tags and Selective Test Execution](#tags-and-selective-test-execution)
 9. [Output and Reporting](#output-and-reporting)
-10. [Performance Testing and Timing](#performance-testing-and-timing)
-11. [Command Line Options](#command-line-options)
-12. [Environment Variables](#environment-variables)
-13. [Advanced Techniques](#advanced-techniques)
-14. [Best Practices](#best-practices)
-15. [Complete Examples](#complete-examples)
-16. [API Reference](#api-reference)
+10. [HTML Test Reports with t2h](#html-test-reports-with-t2h)
+11. [Performance Testing and Timing](#performance-testing-and-timing)
+12. [Command Line Options](#command-line-options)
+13. [Environment Variables](#environment-variables)
+14. [Advanced Techniques](#advanced-techniques)
+15. [Best Practices](#best-practices)
+16. [Complete Examples](#complete-examples)
+17. [API Reference](#api-reference)
 
 ---
 
@@ -158,21 +159,7 @@ CASE,-- Addition Tests
     `--- 0 FAIL | 3 PASS | 0 SKIP
 ```
 
-**Test cases can be nested** for hierarchical organization:
-
-```c
-tstcase("Outer Test Case") {
-    int setup_value = initialize();
-    
-    tstcase("Inner Test Case A") {
-        tstcheck(setup_value > 0);
-    }
-    
-    tstcase("Inner Test Case B") {
-        tstcheck(setup_value < 100);
-    }
-}
-```
+**Note**: Test cases cannot be nested. If you need hierarchical organization within a case, use `tstsection` instead.
 
 ### Sections (`tstsection`)
 
@@ -211,14 +198,25 @@ This ensures each section starts with a fresh state.
 
 ### Printf-Style Formatting
 
-Both `tstcase` and `tstsection` support formatted descriptions:
+### Test Case Descriptions
+
+Test case descriptions are simple strings:
+
+```c
+tstcase("Basic arithmetic test") {
+    tstcheck(1 + 1 == 2);
+}
+
+// With tags
+tstcase("Database connection test", +RequiresDB) {
+    tstcheck(db_connect() == 0);
+}
+```
+
+Note: `tstsection` descriptions support printf-style formatting:
 
 ```c
 int test_value = 42;
-tstcase("Testing value %d", test_value) {
-    tstcheck(test_value == 42);
-}
-
 tstsection("Section for test %d (expected: %d)", test_value, 42) {
     tstcheck(test_value == 42);
 }
@@ -252,10 +250,15 @@ tstcheck(x > 0, "x should be positive");           // With message
 tstcheck(x == 42, "Expected 42, got %d", x);       // With formatting
 ```
 
+Output on success:
+```
+  10 PASS|  x > 0
+```
 Output on failure:
 ```
   10 FAIL|  x > 0 "Expected 42, got 37"
 ```
+
 
 #### `tstexpect(condition, message, ...)` - Silent on Pass
 
@@ -324,10 +327,16 @@ tstcheck(factorial(5) == 120, "5! should be 120");
 // Use assignment within check to avoid recalculation
 tstcheck((result = factorial(5)) == 120, "Got %d", result);
 
-// Add descriptive strings for complex checks
+// Add descriptive strings to make the log more explanatory
+// The string literal helps you remember what the test is about
 tstcheck("Database connection" && (db != NULL));
 int x = factorial(5);
-tstcheck("Cecking factorial" && x == 120);  
+tstcheck("Checking factorial" && x == 120);
+
+// How it works: In C, a non-empty string literal is always true,
+// so "text" && condition is equivalent to condition, but the
+// output will display the full expression including the string,
+// making the log more readable and self-documenting.
 ```
 
 **DON'T:**
@@ -600,126 +609,190 @@ tstskipif(!feature_enabled) {
 
 ## Tags and Selective Test Execution
 
-Tags provide compile-time test categorization and runtime filtering.
+Tags enable selective execution of test cases based on categories like speed, resource requirements, or test type. Tags are specified directly in test case declarations using bare identifiers (no quotes needed).
 
-### Defining Tags
+### Tag Syntax
 
-Declare tags in the `tstsuite` definition (up to 8 tags):
+Tags use `+` or `-` prefixes:
+- **`+Tag`**: Test requires this capability/feature to be enabled
+- **`-Tag`**: Test runs when this capability/feature is disabled
 
 ```c
-tstsuite("Comprehensive Tests", 
-         SlowTests, QuickTests, RequiresDB, RequiresNet,
-         Integration, Unit, Smoke, Regression) {
-    // Tag-based test organization
+tstcase("Test name", +Tag1, +Tag2)   // Requires Tag1 and Tag2
+tstcase("Test name", -SlowTests)     // Runs when SlowTests disabled
+tstcase("Test name")                 // No tags (always runs)
+```
+
+### Basic Example
+
+```c
+tstsuite("API Tests") {
+    
+    // This test always runs (no tags)
+    tstcase("Basic API Check") {
+        tstcheck(api_version() == 1);
+    }
+    
+    // Only runs when RequiresDB is enabled on command line
+    tstcase("Database Test", +RequiresDB) {
+        tstcheck(db_connect() == 0);
+    }
+    
+    // Only runs when SlowTests is disabled on command line
+    tstcase("Fast Test", -SlowTests) {
+        tstcheck(quick_check() == 1);
+    }
+    
+    // Multiple tags
+    tstcase("Full Integration", +RequiresDB, +RequiresNet, +SlowTests) {
+        tstcheck(full_integration_test() == 0);
+    }
 }
 ```
 
-### Using Tags in Tests
+### Command Line Tag Filtering
 
-Check tag status with `tsttag(TagName)`:
-
-```c
-tstsuite("API Tests", SlowTests, QuickTests) {
-    
-    // Quick tests run when QuickTests tag is enabled
-    tstskipif(!tsttag(QuickTests)) {
-        tstcase("Fast API Check") {
-            tstcheck(api_ping() == 0);
-        }
-    }
-    
-    // Slow tests only when SlowTests enabled
-    tstskipif(!tsttag(SlowTests)) {
-        tstcase("Full API Scan") {
-            for (int i = 0; i < 1000; i++) {
-                tstcheck(api_call(i) >= 0);
-            }
-        }
-    }
-}
-```
-
-### Runtime Tag Control
-
-Enable/disable tags programmatically:
-
-```c
-tstsuite("Dynamic Tags", Debug, Performance) {
-    
-    // Initially run with current tag settings
-    tstskipif(tsttag(Debug)) {
-        tstcheck(debug_check_1());
-    }
-    
-    // Disable Debug tag
-    tsttag(Debug, 0);
-    
-    // These won't be skipped even though Debug was initially on
-    tstskipif(tsttag(Debug)) {
-        tstcheck(debug_check_2());  // Will run
-    }
-    
-    // Re-enable Debug tag
-    tsttag(Debug, 1);
-}
-```
-
-### Command-Line Tag Control
+Tags are controlled via command line arguments:
 
 ```bash
-# Enable SlowTests, disable QuickTests
-./test_program +SlowTests -QuickTests
+# Run all tests (untagged run, tagged tests skipped by default)
+./test_program
 
-# Enable all tags
+# List all tests with their tags
+./test_program --list
+
+# Enable all tests with +RequiresDB
+./test_program +RequiresDB
+
+# Enable tests with -SlowTests (disable tests with +SlowTests)
+./test_program -SlowTests
+
+# Enable ALL +Tag tests (but not -Tag tests)
 ./test_program +*
 
-# Disable all tags, then enable specific ones
-./test_program -* +Unit +Smoke
-
-# Multiple options
-./test_program +SlowTests +Integration --color
+# Combine filters: later filters override earlier ones
+./test_program +* -SlowTests    # Enable all, then enable -SlowTests tests
+./test_program +RequiresDB +SlowTests   # Enable both
 ```
 
-### Tag-Based Test Organization Patterns
+### Tag Semantics
+
+**Key Rules:**
+
+1. **Untagged tests always run** - They are immune to all tag filters
+2. **Tagged tests are disabled by default** - Must be explicitly enabled
+3. **Filters are processed left-to-right** - Later filters override earlier ones
+4. **`+*` is special** - Enables all `+Tag` tests (but not `-Tag` tests)
+
+**Filter Behavior:**
+
+| Command Line | Effect |
+|--------------|--------|
+| `+TAG` | Enable tests with `+TAG`, disable tests with `-TAG` |
+| `-TAG` | Disable tests with `+TAG`, enable tests with `-TAG` |
+| `+*` | Enable all tests with any `+TAG` (not `-TAG`) |
+| `+*, -TAG` | First enable all `+Tag` tests, then enable `-TAG` tests |
+
+**Examples:**
+
+```bash
+# Enable database tests, disable non-database tests
+./test_program +RequiresDB
+
+# Skip slow tests, run fast tests
+./test_program -SlowTests
+
+# Run all tagged tests except slow ones
+./test_program +* -SlowTests
+
+# Override: first disable, then re-enable specific tag
+./test_program -RequiresDB +RequiresDB    # Net result: RequiresDB enabled
+```
+
+### Common Tag Patterns
 
 #### By Speed
 ```c
-tstsuite("Tests", Fast, Slow) {
-    tstskipif(tsttag(Fast)) {
-        tstcase("Quick Checks") { /* ... */ }
-    }
-    
-    tstskipif(tsttag(Slow)) {
-        tstcase("Comprehensive Checks") { /* ... */ }
+tstcase("Quick validation", -SlowTests) {
+    tstcheck(quick_check());
+}
+
+tstcase("Comprehensive scan", +SlowTests) {
+    for (int i = 0; i < 10000; i++) {
+        tstcheck(thorough_check(i));
     }
 }
+```
+
+Run only fast tests:
+```bash
+./test_program -SlowTests
 ```
 
 #### By Resource Requirements
 ```c
-tstsuite("Tests", NoDB, NoNet, NoFS) {
-    tstskipif(tsttag(NoDB)) {
-        tstcase("Database Tests") { /* ... */ }
-    }
-    
-    tstskipif(tsttag(NoNet)) {
-        tstcase("Network Tests") { /* ... */ }
-    }
+tstcase("Offline test", -RequiresDB, -RequiresNet) {
+    tstcheck(local_computation() == 42);
 }
+
+tstcase("Database test", +RequiresDB) {
+    tstcheck(db_query() == 0);
+}
+
+tstcase("Network test", +RequiresNet) {
+    tstcheck(api_call() == 200);
+}
+```
+
+Run only tests that don't need database:
+```bash
+./test_program -RequiresDB
 ```
 
 #### By Test Type
 ```c
-tstsuite("Tests", Unit, Integration, E2E) {
-    tstskipif(tsttag(Unit)) {
-        tstcase("Unit Tests") { /* ... */ }
-    }
-    
-    tstskipif(tsttag(Integration)) {
-        tstcase("Integration Tests") { /* ... */ }
-    }
+tstcase("Unit test", +Unit) {
+    tstcheck(function_under_test(5) == 25);
+}
+
+tstcase("Integration test", +Integration, +RequiresDB) {
+    tstcheck(full_workflow() == SUCCESS);
+}
+
+tstcase("End-to-end test", +E2E, +RequiresDB, +RequiresNet) {
+    tstcheck(complete_user_flow() == SUCCESS);
 }
 ```
+
+Run only unit tests:
+```bash
+./test_program +Unit
+```
+
+### Listing Tagged Tests
+
+The `--list` option shows all test cases with their tags:
+
+```bash
+./test_program --list
+```
+
+Output:
+```
+"Basic API Check"
+"Database Test" +RequiresDB
+"Fast Test" -SlowTests
+"Full Integration" +RequiresDB, +RequiresNet, +SlowTests
+```
+
+### Tag Truth Table
+
+| Test Tags | No Filter | `+*` | `+TAG` | `-TAG` | `+*, -TAG` |
+|-----------|-----------|------|--------|--------|------------|
+| (no tags) | ✅ RUN | ✅ RUN | ✅ RUN | ✅ RUN | ✅ RUN |
+| `+TAG` | ❌ SKIP | ✅ RUN | ✅ RUN | ❌ SKIP | ❌ SKIP |
+| `-TAG` | ❌ SKIP | ❌ SKIP | ❌ SKIP | ✅ RUN | ✅ RUN |
+| `+OTHER` | ❌ SKIP | ✅ RUN | ❌ SKIP | ❌ SKIP | ✅ RUN |
 
 ---
 
@@ -793,20 +866,6 @@ Headers: 5
   67 >>>>>
 ```
 
-### Color Output
-
-Colors are disabled by default. Enable with `--color`:
-
-```bash
-./test_program --color
-```
-
-Color scheme:
-- **FAIL**: Red
-- **PASS**: Green
-- **SKIP**: Yellow
-- **Headers/Markers**: Cyan
-
 ### Capturing Test Counts
 
 Access global counters in your code:
@@ -828,6 +887,688 @@ tstsuite("Counter Example") {
     
     tstnote("So far: %d passes, %d fails", tst_pass, tst_fail);
 }
+```
+
+---
+
+## HTML Test Reports with t2h
+
+The `t2h` tool converts TST log output into interactive HTML dashboards with visual statistics, charts, and detailed test logs.
+
+### Basic Usage
+
+#### Single Test File
+
+Convert a single test log to HTML:
+
+```bash
+# From stdin
+./test_program | t2h > report.html
+
+# From file
+t2h test.log > report.html
+```
+
+#### Multiple Test Files
+
+Generate a consolidated report from multiple test logs:
+
+```bash
+t2h test1.log test2.log test3.log > consolidated.html
+```
+
+The consolidated report includes:
+- Overall summary across all test files
+- Cumulative statistics with percentages
+- Individual sections for each test file
+- Quick navigation between suites
+
+### Features
+
+#### Interactive Dashboard
+
+The HTML report includes:
+
+1. **Overall Summary**
+   - Pie chart showing pass/fail distribution
+   - Summary grid with counts and percentages
+   - Total test count and execution time
+
+2. **Test Statistics Card**
+   - Total tests executed
+   - Pass/fail/skip counts with percentages
+   - Number of test cases
+
+3. **Visual Progress Bars**
+   - Color-coded segmented bars
+   - Hover tooltips with exact counts
+   - Pass rate and fail rate display
+
+4. **Test Cases Detail**
+   - Clickable test case sections
+   - Expandable log viewer for each case
+   - Color-coded log lines (PASS/FAIL/SKIP/NOTE)
+   - Syntax highlighting
+
+#### Visual Indicators
+
+**Left Border Colors** - Quick status identification:
+- **Red border** - Contains failed tests
+- **Green border** - All tests passed
+- **Blue border** - Mixed results or skipped tests
+
+**Status Colors**:
+- Green (#28a745) - Passed tests
+- Red (#dc3545) - Failed tests
+- Yellow (#ffc107) - Skipped tests
+
+#### Percentage Calculations
+
+**Important**: Percentages exclude skipped tests:
+- Pass% = passed / (passed + failed) × 100
+- Fail% = failed / (passed + failed) × 100
+- Skipped tests show count only (no percentage)
+
+This provides accurate pass/fail rates for actually executed tests.
+
+#### Log Viewer
+
+Click any test case section to expand its log details:
+- Line numbers preserved
+- Indentation maintained
+- Syntax-highlighted output
+- Color-coded test results
+- Dark theme for readability
+
+#### Pie Charts
+
+Each summary includes a donut chart showing:
+- Visual proportion of pass/fail/skip
+- Tooltips with counts and percentages
+- Full circle for 100% pass/fail cases
+- Positioned left of summary grid
+
+### Multi-File Reports
+
+When processing multiple files, t2h generates:
+
+1. **Consolidated Header**
+   - Combined statistics from all files
+   - List of all test suites
+   - Clickable suite blocks for navigation
+   - Color-coded status indicators
+
+2. **Individual Suite Sections**
+   - Full details for each test file
+   - Separate statistics per suite
+   - "Back to Top" navigation links
+   - Unique IDs for proper JavaScript toggling
+
+### Warnings and Limits
+
+**Log Line Limit**: Each test suite can store up to 10,000 log lines.
+
+When the limit is exceeded:
+- Warning printed to stderr during conversion
+- Yellow warning box displayed in HTML report
+- Message: "Log exceeded 10000 lines. Some test case details may be incomplete."
+
+### Example Workflow
+
+```bash
+# Run tests and save logs
+./test_basics > logs/basics.log
+./test_advanced > logs/advanced.log
+./test_integration > logs/integration.log
+
+# Generate consolidated HTML report
+t2h logs/*.log > reports/test-report-$(date +%Y%m%d).html
+
+# Open in browser
+xdg-open reports/test-report-*.html
+```
+
+### Features Summary
+
+- ✅ Single-file HTML output (no dependencies)
+- ✅ Responsive design (works on mobile)
+- ✅ Interactive expandable sections
+- ✅ Pie charts and progress bars
+- ✅ Color-coded status indicators
+- ✅ Syntax-highlighted logs
+- ✅ Multi-file consolidation
+- ✅ Warning notifications
+- ✅ Dark-themed log viewer
+- ✅ Clickable navigation
+
+### Building t2h
+
+The t2h tool is included in the TST distribution:
+
+```bash
+cd src
+make t2h
+```
+
+Requirements:
+- C compiler (gcc, clang, etc.)
+- Math library (links with `-lm`)
+
+---
+
+## Shell Testing with tst.sh
+
+TST provides a bash library (`tst.sh`) for writing shell-based tests that produce TST-formatted output. This enables testing of shell scripts, system commands, and integration scenarios using the same test framework and HTML reporting as C tests.
+
+### Overview
+
+The `tst.sh` library mirrors the tst.h API but is implemented as bash functions. It generates the same log format, making test results compatible with `t2h` for HTML report generation.
+
+**Key Features:**
+- TST-compatible log output
+- Automatic line number detection using `${BASH_LINENO[0]}`
+- Optional explicit line numbers for helper functions
+- Suite, case, and section organization
+- Built-in helper functions for common patterns
+- State management for pass/fail/skip counts
+
+### Installation
+
+The `tst.sh` library is a single bash script. Source it in your test scripts:
+
+```bash
+#!/bin/bash
+source "/path/to/tst.sh"
+
+# Your tests here
+```
+
+### Basic Usage
+
+#### Minimal Example
+
+```bash
+#!/bin/bash
+source "$(dirname "$0")/../src/tst.sh"
+
+tstsuite_begin "Basic Shell Tests" "$0"
+
+tstcase_begin "Simple checks"
+  tstpass "1 + 1 == 2"
+  tstfail "1 + 1 == 3" "Math is broken"
+tstcase_end
+
+tstsuite_end
+```
+
+#### Running the Test
+
+```bash
+chmod +x test_script.sh
+./test_script.sh
+```
+
+Output:
+```
+----- SUIT / test_script.sh "Basic Shell Tests" 2025-11-28 10:30:45
+    6 CASE,-- Simple checks
+    7 PASS|  1 + 1 == 2
+    8 FAIL|  1 + 1 == 3 "Math is broken"
+    6     `--- 1 FAIL | 1 PASS | 0 SKIP
+^^^^^ RSLT \ 1 FAIL | 1 PASS | 0 SKIP 2025-11-28 10:30:45
+```
+
+### Suite Management
+
+#### `tstsuite_begin`
+
+Starts a test suite and prints the suite header.
+
+```bash
+tstsuite_begin "Suite Title" "$0"
+tstsuite_begin "Suite Title" "$0" "disabled"  # Disabled suite
+```
+
+**Parameters:**
+- `suite_title` - Descriptive title for the suite
+- `filename` - Source filename (use `$0`)
+- `disabled` - Optional, adds "(disabled)" suffix
+
+**Example:**
+```bash
+tstsuite_begin "Integration Tests" "$0"
+```
+
+#### `tstsuite_end`
+
+Ends the test suite and prints final results.
+
+```bash
+tstsuite_end
+```
+
+Prints either `RSLT` (normal) or `ABRT` (if a test called `tstassert` and failed).
+
+### Test Cases
+
+#### `tstcase_begin`
+
+Starts a test case.
+
+```bash
+tstcase_begin "Test case description"
+```
+
+Automatically captures the line number using `${BASH_LINENO[0]}`.
+
+**Example:**
+```bash
+tstcase_begin "File operations"
+  # Tests go here
+tstcase_end
+```
+
+#### `tstcase_end`
+
+Ends the current test case and prints partial results.
+
+```bash
+tstcase_end
+tstcase_end "$line_number"  # Optional explicit line number
+```
+
+### Assertions
+
+#### `tstpass`
+
+Records a passing check.
+
+```bash
+tstpass "expression"           # Auto-detect line number
+tstpass $LINENO "expression"   # Explicit line number
+```
+
+**Auto-Detect (Recommended):**
+```bash
+tstpass "test -f /etc/passwd"
+```
+
+**Explicit (For Helper Functions):**
+```bash
+check_file() {
+  if [ -f "$1" ]; then
+    tstpass $LINENO "File $1 exists"
+  fi
+}
+```
+
+#### `tstfail`
+
+Records a failing check with an optional error message.
+
+```bash
+tstfail "expression" "message"    # Auto-detect line number
+tstfail $LINENO "expression" "message"  # Explicit
+```
+
+**Examples:**
+```bash
+tstfail "test -f /missing" "File not found"
+tstfail $LINENO "parse result" "Expected success, got error"
+```
+
+#### `tstskip`
+
+Records a skipped check.
+
+```bash
+tstskip "expression"           # Auto-detect
+tstskip $LINENO "expression"   # Explicit
+```
+
+#### `tstcheck`
+
+Evaluates a command result and records pass/fail.
+
+```bash
+tstcheck "description" $exit_code "failure message"
+```
+
+**Example:**
+```bash
+ls /tmp > /dev/null 2>&1
+tstcheck "ls /tmp succeeds" $? "Directory not found"
+```
+
+#### `tstassert`
+
+Critical check that aborts the suite on failure.
+
+```bash
+tstassert "expression" $exit_code "failure message"
+```
+
+**Example:**
+```bash
+mkdir -p /tmp/testdir
+tstassert "Create test directory" $? "Failed to create directory"
+# Suite exits here if mkdir failed
+```
+
+### Sections
+
+Sections group related checks within a test case.
+
+#### `tstsection_begin`
+
+```bash
+tstsection_begin "Section description"
+```
+
+#### `tstsection_end`
+
+```bash
+tstsection_end
+tstsection_end "$line_number"  # Optional explicit line
+```
+
+**Example:**
+```bash
+tstcase_begin "Configuration tests"
+  tstsection_begin "Parse config file"
+    result=$(parse_config config.ini)
+    tstpass "Config parsed"
+  tstsection_end
+  
+  tstsection_begin "Validate settings"
+    tstpass "Settings valid"
+  tstsection_end
+tstcase_end
+```
+
+### Skip Blocks
+
+Skip blocks conditionally skip groups of tests.
+
+```bash
+tstskip_block_begin "condition description"
+  # Tests to skip
+tstskip_block_end
+```
+
+**Example:**
+```bash
+if ! command -v docker &> /dev/null; then
+  tstskip_block_begin "Docker not installed"
+    tstskip "Docker daemon running"
+    tstskip "Container can start"
+  tstskip_block_end
+fi
+```
+
+### Output and Notes
+
+#### `tstnote`
+
+Prints an informational note.
+
+```bash
+tstnote "Testing with config: $config_file"
+```
+
+#### `tstoutput_begin` / `tstoutput_end`
+
+Captures multi-line output.
+
+```bash
+tstoutput_begin "Command output"
+  echo "Line 1"
+  echo "Line 2"
+tstoutput_end
+```
+
+Output:
+```
+   15 <<<<< Command output
+Line 1
+Line 2
+   15 >>>>>
+```
+
+#### `tstclock`
+
+Records timing information.
+
+```bash
+tstclock "$elapsed" "m" "Operation description"
+```
+
+Parameters:
+- `elapsed` - Numeric value
+- `unit` - "n" (ns), "u" (µs), or "m" (ms)
+- `description` - What was timed
+
+**Example:**
+```bash
+start=$(date +%s%N)
+sleep 1
+end=$(date +%s%N)
+elapsed=$(( (end - start) / 1000000 ))  # Convert to ms
+tstclock "$elapsed" "m" "Sleep 1 second"
+```
+
+### Helper Functions
+
+The library provides helper functions for common patterns.
+
+#### `tst_run`
+
+Runs a command and checks its exit status.
+
+```bash
+tst_run "description" command [args...]
+```
+
+**Example:**
+```bash
+tst_run "List temp dir" ls /tmp
+tst_run "Remove old files" rm -f /tmp/old*.txt
+```
+
+#### `tst_equal`
+
+Compares two values for equality.
+
+```bash
+tst_equal "$actual" "$expected" "description"
+```
+
+**Example:**
+```bash
+result=$(expr 2 + 2)
+tst_equal "$result" "4" "2 + 2 == 4"
+```
+
+#### `tst_not_equal`
+
+Checks that values are not equal.
+
+```bash
+tst_not_equal "$actual" "$unexpected" "description"
+```
+
+#### `tst_greater`
+
+Numeric greater-than comparison.
+
+```bash
+tst_greater "$actual" "$threshold" "description"
+```
+
+**Example:**
+```bash
+count=$(ls /tmp | wc -l)
+tst_greater "$count" "0" "Temp dir not empty"
+```
+
+#### `tst_less`
+
+Numeric less-than comparison.
+
+```bash
+tst_less "$actual" "$threshold" "description"
+```
+
+### Complete Example
+
+```bash
+#!/bin/bash
+source "$(dirname "$0")/../src/tst.sh"
+
+tstsuite_begin "File System Tests" "$0"
+
+tstcase_begin "Directory operations"
+  tstnote "Testing basic directory operations"
+  
+  # Create test directory
+  mkdir -p /tmp/tst_test
+  tstassert "Create test dir" $? "Failed to create directory"
+  
+  # Verify it exists
+  if [ -d /tmp/tst_test ]; then
+    tstpass "Directory exists"
+  else
+    tstfail "Directory exists" "Not found"
+  fi
+  
+  # Test with helper
+  file_count=$(ls /tmp/tst_test | wc -l)
+  tst_equal "$file_count" "0" "Directory is empty"
+  
+  # Cleanup
+  rm -rf /tmp/tst_test
+  tst_run "Cleanup test dir" rm -rf /tmp/tst_test
+tstcase_end
+
+tstcase_begin "Command execution"
+  tstsection_begin "Echo test"
+    output=$(echo "hello")
+    tst_equal "$output" "hello" "Echo works"
+  tstsection_end
+  
+  tstsection_begin "Date command"
+    date > /dev/null
+    tstcheck "Date command succeeds" $?
+  tstsection_end
+tstcase_end
+
+tstsuite_end
+```
+
+### Line Number Handling
+
+The library supports two modes for line numbers:
+
+**Auto-Detect (Recommended):**
+```bash
+tstpass "test expression"
+tstfail "test expression" "error message"
+```
+
+The function automatically captures the caller's line number using `${BASH_LINENO[0]}`.
+
+**Explicit (For Helper Functions):**
+```bash
+my_check() {
+  if [ -f "$1" ]; then
+    tstpass $LINENO "File $1 exists"
+  else
+    tstfail $LINENO "File $1 exists" "Not found"
+  fi
+}
+```
+
+When you call a helper function, auto-detect would show the line number inside the helper, not where you called it. Use `$LINENO` to pass the caller's line number explicitly.
+
+### Integration with t2h
+
+Tests written with `tst.sh` produce TST-formatted logs that work with `t2h`:
+
+```bash
+# Run test and generate HTML report
+./test_script.sh | t2h > report.html
+
+# Multiple shell test logs
+./test_system.sh > system.log
+./test_integration.sh > integration.log
+t2h system.log integration.log > consolidated.html
+```
+
+### Best Practices
+
+**DO:**
+- Use auto-detect for direct assertions
+- Use explicit `$LINENO` in helper functions
+- Add descriptive messages to failures
+- Use helper functions for common patterns
+- Clean up resources in test cases
+
+**Example:**
+```bash
+tstcase_begin "Resource cleanup"
+  temp_file=$(mktemp)
+  tstassert "Create temp file" $? "mktemp failed"
+  
+  echo "test data" > "$temp_file"
+  tstpass "Write to temp file"
+  
+  # Always cleanup
+  rm -f "$temp_file"
+  tst_run "Remove temp file" rm -f "$temp_file"
+tstcase_end
+```
+
+**DON'T:**
+```bash
+# Bad: No cleanup
+tstcase_begin "Bad example"
+  temp_file=$(mktemp)
+  echo "data" > "$temp_file"
+  tstpass "Created file"
+  # File leaked!
+tstcase_end
+
+# Bad: Generic error messages
+tstfail "test" "Failed"  # Not helpful
+
+# Bad: No line numbers in helper
+my_helper() {
+  tstpass "check"  # Line number will be inside helper, not caller
+}
+```
+
+### State Variables
+
+The library maintains internal state that can be accessed:
+
+| Variable | Description |
+|----------|-------------|
+| `TST_TOTAL_PASS` | Total passes in suite |
+| `TST_TOTAL_FAIL` | Total failures in suite |
+| `TST_TOTAL_SKIP` | Total skips in suite |
+| `TST_CASE_PASS` | Passes in current case |
+| `TST_CASE_FAIL` | Failures in current case |
+| `TST_CASE_SKIP` | Skips in current case |
+| `TST_ABORT` | Set to 1 if suite aborted |
+
+**Example:**
+```bash
+tstcase_begin "Conditional logic"
+  tstpass "First check"
+  tstpass "Second check"
+  
+  tstnote "Current case has $TST_CASE_PASS passes"
+tstcase_end
 ```
 
 ---
@@ -925,31 +1666,27 @@ tstclock("CPU test") {
 ### Syntax
 
 ```bash
-./test_program [options] [tags]
+./test_program [options] [tag-filters]
 ```
 
 ### Available Options
 
-#### `--help`
+#### `--list`
 
-Display usage information:
-
-```bash
-$ ./test_program --help
-Test suite: "My Test Suite"
-./test_program [--help] [--color] [--report-error] [--list] [+/-]tag ...
-tags: SlowTests QuickTests
-```
-
-#### `--color`
-
-Toggle ANSI color output:
+List all test cases with their tags:
 
 ```bash
-./test_program --color
+$ ./test_program --list
+"Basic API Check"
+"Database Test" +RequiresDB
+"Fast Test" -SlowTests
+"Full Integration" +RequiresDB, +RequiresNet, +SlowTests
 ```
 
-Colors are persistent - using `--color` again toggles them off.
+This shows:
+- Untagged tests (no tags shown)
+- Tagged tests with their `+Tag` and `-Tag` markers
+- Multiple tags separated by commas
 
 #### `--report-error`
 
@@ -971,119 +1708,77 @@ if [ $? -ne 0 ]; then
 fi
 ```
 
-#### `--list`
+### Tag Filters
 
-List suite name and available tags:
+Tag filters control which tagged tests execute. **Untagged tests always run regardless of filters.**
 
-```bash
-$ ./test_program --list
-test_program "Database Integration Tests"
-tags: SlowTests RequiresDB Integration Smoke
-```
-
-### Tag Control
-
-#### Enable Tags
+#### Enable Specific Tags
 
 ```bash
+# Run tests with +RequiresDB
+./test_program +RequiresDB
+
+# Run tests with +SlowTests and +Integration
 ./test_program +SlowTests +Integration
 ```
 
-#### Disable Tags
+#### Disable Specific Tags
 
 ```bash
-./test_program -QuickTests
+# Run tests with -SlowTests (skip tests with +SlowTests)
+./test_program -SlowTests
+
+# Enable tests with -RequiresDB
+./test_program -RequiresDB
 ```
 
-#### All Tags
+#### Enable All Tagged Tests
 
 ```bash
-# Enable all tags
+# Enable all tests with any +Tag (but not -Tag tests)
+./test_program +*
+```
+
+#### Combining Filters (Priority Matters!)
+
+Filters are processed **left-to-right**, with later filters overriding earlier ones:
+
+```bash
+# Enable all +Tag tests, then also enable -SlowTests tests
+./test_program +* -SlowTests
+
+# Enable +RequiresDB, then override with -RequiresDB
+./test_program +RequiresDB -RequiresDB    # Net: -RequiresDB wins
+```
+
+### Filter Examples
+
+```bash
+# Development: run only fast tests
+./test_program -SlowTests
+
+# CI: run all tests including slow ones
 ./test_program +*
 
-# Disable all tags
-./test_program -*
-```
+# Integration testing: database and network tests
+./test_program +RequiresDB +RequiresNet
 
-#### Combined Options
+# Pre-commit: fast offline tests only
+./test_program -SlowTests -RequiresDB -RequiresNet
 
-```bash
-./test_program --color --report-error +SlowTests -QuickTests
+# Full suite with error reporting
+./test_program +* --report-error
 ```
 
 ---
 
 ## Environment Variables
 
-### `TSTOPTIONS`
-
-Set default options via environment variable:
-
-```bash
-export TSTOPTIONS="--color +SlowTests"
-./test_program  # Runs with color and SlowTests enabled
-```
-
-Command-line arguments override environment settings:
-
-```bash
-export TSTOPTIONS="--color"
-./test_program --color  # Toggles color OFF (since env enabled it)
-```
-
-### Combining Options
-
-```bash
-# In .bashrc or environment
-export TSTOPTIONS="--color --report-error"
-
-# Per-test customization
-./test_program +Integration    # Adds Integration tag
-./test_program -* +Unit +Smoke # Override: only Unit and Smoke
-```
-
-### CI/CD Integration
-
-```bash
-# GitLab CI example
-test:
-  script:
-    - export TSTOPTIONS="--report-error --color"
-    - make test
-```
+TST does not currently use environment variables for configuration. All options must be specified on the command line.
 
 ---
 
 ## Advanced Techniques
-
-### Nested Test Cases
-
-Organize complex test hierarchies:
-
-```c
-tstcase("Top Level") {
-    int global_setup = initialize();
-    
-    tstcase("Category A") {
-        int category_setup = setup_a();
-        
-        tstcheck(test_a1(global_setup, category_setup));
-        tstcheck(test_a2(global_setup, category_setup));
-        
-        cleanup_a(category_setup);
-    }
-    
-    tstcase("Category B") {
-        int category_setup = setup_b();
-        
-        tstcheck(test_b1(global_setup, category_setup));
-        
-        cleanup_b(category_setup);
-    }
-    
-    cleanup(global_setup);
-}
-```
 
 ### Complex Sections with Setup/Teardown
 
@@ -1572,14 +2267,15 @@ tstsuite("Sorting Performance", Performance, Slow) {
 #### Suite Definition
 | Macro | Description |
 |-------|-------------|
-| `tstsuite(title, ...)` | Define enabled test suite with optional tags |
-| `tst_suite(title, ...)` | Define disabled test suite (compile-time skip) |
+| `tstsuite(title)` | Define enabled test suite |
+| `tst_suite(title)` | Define disabled test suite (compile-time skip) |
 
 #### Test Organization
 | Macro | Description |
 |-------|-------------|
-| `tstcase(description, ...)` | Define test case (supports printf formatting) |
-| `tst_case(description, ...)` | Disabled test case |
+| `tstcase(description)` | Define test case with description |
+| `tstcase(description, +Tag, ...)` | Define test case with tags (bare identifiers) |
+| `tst_case(description)` | Disabled test case |
 | `tstsection(description, ...)` | Define section with setup/teardown isolation |
 | `tst_section(description, ...)` | Disabled section |
 
@@ -1623,10 +2319,16 @@ tstsuite("Sorting Performance", Performance, Slow) {
 | `tst_data_size` | Number of elements in tstdata |
 
 #### Tags
-| Function | Description |
-|----------|-------------|
-| `tsttag(tag)` | Returns non-zero if tag enabled |
-| `tsttag(tag, value)` | Enable (1) or disable (0) tag |
+Tags are specified directly in `tstcase()` declarations as bare identifiers with `+` or `-` prefix. They are controlled via command line arguments:
+
+| Command Line | Description |
+|--------------|-------------|
+| `--list` | List all test cases with their tags |
+| `+TAG` | Enable tests with `+TAG`, disable tests with `-TAG` |
+| `-TAG` | Disable tests with `+TAG`, enable tests with `-TAG` |
+| `+*` | Enable all tests with any `+TAG` (not `-TAG`) |
+
+See [Tags and Selective Test Execution](#tags-and-selective-test-execution) for details.
 
 ### Functions
 
@@ -1652,7 +2354,6 @@ tstsuite("Sorting Performance", Performance, Slow) {
 | Option | Description |
 |--------|-------------|
 | `--help` | Show help message |
-| `--color` | Toggle color output |
 | `--report-error` | Return error on test failure |
 | `--list` | List suite name and tags |
 | `+tag` | Enable specific tag |
@@ -1686,4 +2387,5 @@ MIT License - See LICENSE file for details
 **End of Manual**
 
 For more examples and tutorials, see the `tutorial/` directory.  
-For a concise API reference, see `reference.md`.
+For a concise API reference, see `ref_manual.md`.  
+For maintainer-focused internals and upgrade guides, see `docs/maintainer/`.

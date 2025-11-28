@@ -10,7 +10,6 @@ usage () {
   echo "OPTIONS"
   echo "  -h | --help                 this help"
   echo "  -l | --list                 prints the list of available tests"
-  echo "  -c | --color                toggles coloured messages on/off"
   echo "  -d | --test-directory dir   cd to the directory dir with tests"
   echo "  -w | --wildcard '*x[yz]'    specify a file pattern to match the tests to execute"
   echo "  -o | --output filename      the name of the generated logfile"
@@ -25,31 +24,11 @@ usage () {
 }
 
 WILDCARD="*"
-COLOR=""
 OUTFILE="test.log"
 TAGS=""
 
 COLOR_TOGGLE=1
 DEFAULT_OPTIONS=0
-
-toggle_color () {
-    if [ $COLOR_TOGGLE -eq 0 ]; then
-      COLOR_TOGGLE=1
-      ## First character is \033 (ESC)
-      COLOR_RED="[1;31m"
-      COLOR_GREEN="[0;32m"
-      COLOR_YELLOW="[0;33m"
-      COLOR_NONE="[0m"
-    else
-      COLOR_TOGGLE=0
-      COLOR_RED=""
-      COLOR_GREEN=""
-      COLOR_YELLOW=""
-      COLOR_NONE=""
-    fi
-}
-
-toggle_color # Set default to colors off
 
 if [ "$TSTOPTIONS" != "" ] ; then
   set -- $TSTOPTIONS "@@" "$@"
@@ -83,12 +62,6 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
 
-   -c | --color)
-      toggle_color
-      if [ $DEFAULT_OPTIONS -eq 0 ] ; then COLOR="--c" ; fi
-      shift
-      ;;
-
     -o | --output)
       shift;
       if [ "$#" -eq 0 ]; then echo "ERROR: Missing output file name"; usage ; fi
@@ -112,12 +85,12 @@ done
 
 echo "output: $OUTFILE ($WILDCARD)"
 echo "STIME `date`" > $OUTFILE
-find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f $COLOR $TAGS $* ; done 2>> $OUTFILE
+find . -name "t_$WILDCARD" -print | sed -e '/\.c$/d' -e '/\.cpp$/d' -e '/\.o$/d' | while read -r f ; do $f $TAGS $* ; done 2>> $OUTFILE
 
 FAIL=`grep '^[0-9 ]*FAIL' $OUTFILE | wc -l`
 PASS=`grep '^[0-9 ]*PASS' $OUTFILE | wc -l`
 SKIP=`grep '^[0-9 ]*SKIP' $OUTFILE | wc -l`
 
-echo "TOTAL $COLOR_RED$FAIL FAIL$COLOR_NONE | $COLOR_GREEN$PASS PASS$COLOR_NONE | $COLOR_YELLOW$SKIP SKIP$COLOR_NONE" >> $OUTFILE
+echo "TOTAL $FAIL FAIL | $PASS PASS | $SKIP SKIP" >> $OUTFILE
 
 echo "ETIME `date`" >> $OUTFILE

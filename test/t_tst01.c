@@ -3,21 +3,25 @@
 
 #include "tst.h"
 
-tstsuite("Switching groups on and off",NoDB, FileOnly, SimpleRun)
+tstsuite("Basic skipping tests")
 {
-  tstskipif(tsttag(NoDB) && !tsttag(SimpleRun)) {
-     tstcheck("Test 1 (NoDB && !SimpleRun)")
-  } 
-
-  tsttag(NoDB,1); // Disable NoDB
-
-  tstskipif(tsttag(NoDB) && !tsttag(SimpleRun)) {
-     tstcheck("Test 2 (NoDB && !SimpleRun)")
-  } 
- 
-  tsttag(NoDB,0); // Re-enable NoDB
-
-  tstskipif(tsttag(NoDB) && !tsttag(SimpleRun)) {
-     tstcheck("Test 3 (NoDB && !SimpleRun)")
-  }  
+  tstcase("Skipping") {
+    int skip_condition = 0;
+    
+    tstskipif(skip_condition) {
+       tstcheck(1, "Test 1 (should run)")
+    } 
+  
+    skip_condition = 1;
+  
+    tstskipif(skip_condition) {
+       tstcheck(1, "Test 2 (should be skipped)")
+    } 
+   
+    skip_condition = 0;
+  
+    tstskipif(skip_condition) {
+       tstcheck(1, "Test 3 (should run)")
+    }  
+  }
 }

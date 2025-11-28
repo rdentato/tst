@@ -3,30 +3,35 @@
 
 #include "tst.h"
 
-tstsuite("Switching groups on and off",NoDB, FileOnly, SimpleRun)
+tstsuite("Conditional skipping tests")
 {
-  tstcheck("Test NoDB 0 (always)");
-
-  tstskipif(tsttag(NoDB)) {
-    tstcheck("Test NoDB 1");
-    tstcheck("Test NoDB 2");
-    tstcheck("Test NoDB 3");
-    tstcheck("Test NoDB 4");
-  } 
+  tstcase("Conditional skip test 1") {
+    int skip_db_tests = 0;
+    
+    tstcheck(1, "Test DB 0 (always)");
   
-  tstcheck("Test NoDB 9 (always)");
-
-  tstcase("Simplerun") {
-    tstcheck("Test SimpleRun 0 (always)");
+    tstskipif(skip_db_tests) {
+      tstcheck(1, "Test DB 1");
+      tstcheck(1, "Test DB 2");
+      tstcheck(1, "Test DB 3");
+      tstcheck(1, "Test DB 4");
+    } 
+    
+    tstcheck(1, "Test DB 9 (always)");
+  }
+    
+  tstcase("Conditional skip test 2") {
+    int skip_simple_tests = 0;
+    
+    tstcheck(1, "Test Simple 0 (always)");
   
-    tstskipif(tsttag(SimpleRun)) {
-      tstcheck("Test SimpleRun 1");
-      tstcheck("Test SimpleRun 2");
-      tstcheck("Test SimpleRun 3");
-      tstcheck("Test SimpleRun 4");
+    tstskipif(skip_simple_tests) {
+      tstcheck(1, "Test Simple 1");
+      tstcheck(1, "Test Simple 2");
+      tstcheck(1, "Test Simple 3");
+      tstcheck(1, "Test Simple 4");
     } 
 
-    tstcheck("Test SimpleRun 9 (always)");
+    tstcheck(1, "Test Simple 9 (always)");
   }
-
 }

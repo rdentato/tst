@@ -24,7 +24,9 @@ the day for those who will have to understand the code later.
 [Split Tests](#split-tests)<br>
 [Checking Times](#clock)<br>
 [Informational Output](#info-output)<br>
+[Using --report-error for CI/CD Integration](#report-error)<br>
 [Command Line Options](#command-line)<br>
+[Advanced Example: Putting It All Together](#advanced-example)<br>
 [Running Your Tests](#running-tests)<br>
 
 <a id=setup></a>
@@ -124,27 +126,39 @@ all the checks you want to perform on the function:
 #include "functions.h"
 
 tstsuite("Factorials") {
-  tstcheck(fact_0(1) == 1);
-  tstcheck(fact_0(2) == 2);
-  tstcheck(fact_0(3) == 6);
-  tstcheck(fact_0(5) == 120);
+  tstcase("Basic tests") {
+    tstcheck(fact_0(1) == 1);
+    tstcheck(fact_0(2) == 2);
+    tstcheck(fact_0(3) == 6);
+    tstcheck(fact_0(5) == 120);
+  }
 }
 ```
-Once you compile and link it with the file where the `Factorial()` function is defined, you'll get
-an executable, say `t_fact` that, when run, will execute all the tests and report the results:
+
+Once you compile and link it with the file where the `fact_0()` function is defined, you'll get
+an executable, say `t_fact_0`, that when run will execute all the tests and report the results:
 
 ```
------- SUIT ▷ t_fact.c "Check Factorial"
-     5 PASS│  fact(1) == 1
-     6 PASS│  fact(2) == 2
-     7 PASS│  fact(3) == 6
-     8 PASS│  fact(5) == 120
-^^^^^^ RSLT ▷ 0 FAIL | 4 PASS | 0 SKIP
+----- SUIT / t_fact_0.c "Factorials" 2025-11-27 12:00:00
+    6 CASE,--Basic tests
+    7 PASS|  fact_0(1) == 1
+    8 PASS|  fact_0(2) == 2
+    9 PASS|  fact_0(3) == 6
+   10 PASS|  fact_0(5) == 120
+    6     `--- 0 FAIL | 4 PASS | 0 SKIP
+^^^^^ RSLT \ 0 FAIL | 4 PASS | 0 SKIP 2025-11-27 12:00:00
 ```
 The idea is to have a single executable file which defines a "run" of tests that will cover a
 logically related set of functions or will go over a specific use case.
 
 The `tstsuite()` macro will generate `main()`: you don't need (and should not) define a `main()` function.
+
+**Important**: Notice that all `tstcheck()` calls are wrapped inside a `tstcase()` block. This is required - 
+you cannot use `tstcheck()` directly in a `tstsuite()` without a `tstcase()`. The `tstcase()` provides 
+structure and allows the framework to group related tests and report partial results.
+
+**Understanding the output**: The numbers on the left (6, 7, 8, 9, 10) are the line numbers in your test file 
+where each check or case is located. This makes it easy to find which test failed when you need to debug.
 
 <a id="failures"></a>
 
@@ -158,36 +172,52 @@ Let's do it:
 #include "functions.h"
 
 tstsuite("Factorials") {
-  tstcheck(fact_0(0) == 1); // Test edge case
-  tstcheck(fact_0(1) == 1);
-  tstcheck(fact_0(2) == 2);
-  tstcheck(fact_0(3) == 6);
-  tstcheck(fact_0(5) == 120);
+  tstcase("Edge case: 0") {
+    tstcheck(fact_0(0) == 1); // Test edge case
+  }
+  
+  tstcase("Basic tests") {
+    tstcheck(fact_0(1) == 1);
+    tstcheck(fact_0(2) == 2);
+    tstcheck(fact_0(3) == 6);
+    tstcheck(fact_0(5) == 120);
+  }
 }
 ```
 We would have got:
 ```
------- SUIT ▷ t_fact_0_err.c "Check Factorial"
-     5 FAIL│  fact_0(0) == 1
-     6 PASS│  fact_0(1) == 1
-     7 PASS│  fact_0(2) == 2
-     8 PASS│  fact_0(3) == 6
-     9 PASS│  fact_0(5) == 120
-^^^^^^ RSLT ▷ 1 FAIL | 4 PASS | 0 SKIP
+----- SUIT / t_fact_0_err.c "Factorials" 2025-11-27 12:00:00
+    5 CASE,--Edge case: 0
+    6 FAIL|  fact_0(0) == 1
+    5     `--- 1 FAIL | 0 PASS | 0 SKIP
+    9 CASE,--Basic tests
+   10 PASS|  fact_0(1) == 1
+   11 PASS|  fact_0(2) == 2
+   12 PASS|  fact_0(3) == 6
+   13 PASS|  fact_0(5) == 120
+    9     `--- 0 FAIL | 4 PASS | 0 SKIP
+^^^^^ RSLT \ 1 FAIL | 4 PASS | 0 SKIP 2025-11-27 12:00:00
 ```
 Note how failures are reported as the first number in the *results* line. That's because,
-most probably, the first thing we want to know if everything went right.
+most probably, the first thing we want to know is if everything went right.
 
 When a check fails, we might want to print a message to better understand what went wrong.
 We can do it as follows:
 
 ```C
-  tstcheck(fact_0(0) == 1, "Expected 1 got %d", fact_0(0));
+tstsuite("Factorials") {
+  tstcase("Edge case: 0") {
+    tstcheck(fact_0(0) == 1, "Expected 1 got %d", fact_0(0));
+  }
+}
 ```
 and we would have got:
 ```
-    5 FAIL├┬ fact_0(0) == 1
-          │╰ Expected 1 got 0
+----- SUIT / t_fact_0_err.c "Factorials" 2025-11-27 12:00:00
+    5 CASE,--Edge case: 0
+    6 FAIL|  fact_0(0) == 1 "Expected 1 got 0"
+    5     `--- 1 FAIL | 0 PASS | 0 SKIP
+^^^^^ RSLT \ 1 FAIL | 0 PASS | 0 SKIP 2025-11-27 12:00:00
 ```
 
 I find it bothersome to specify a message for every check. After all, most of the time
@@ -496,54 +526,185 @@ execution):
 
 The `tstskipif` function is also the basis for handling tags. Say you have a set of 
 tests that are very expensive to run (e.g. too slow) and you want to be able to
-exclude them for certain runs. For this you can create up to eight tags per
-run and switch them on/off.
+exclude them for certain runs. You can tag individual test cases and then control
+which ones run from the command line.
 
-You specify the tags you want to use (up to eight) as additional parameter
-to the `tstsuite()` function and check them with the `tsttag()` function:
+### Tagging Test Cases
+
+You add tags directly to `tstcase()` declarations using `+tag` for positive tags (opt-in tests)
+and `-tag` for negative tags (opt-out tests):
 
 ```C
-tstsuite("Do a bunch of tests",TestDB, DeepTest, SimpleRun)
-{
-  tstcase() {
-    tstskipif(tsttag(TestDB) && !tsttag(SimpleRun)) {
-       // Only if TestDB is enabled and SimpleRun is disabled.
-       tstcheck(db.connection != NULL);
-    }
+#include "tst.h"
+
+tstsuite("Database Tests") {
+  tstcase("Quick validation") {
+    // This test always runs (no tags)
+    tstcheck(validate_config());
   }
-
-  // You can enclose full testcases if you want!
-  tstskipif(!tsttag(DeepTest)) {
-     testcase("Full tests") {
-        // Many checks here
-     }
-
-     testcase("Full tests twice") {
-        // Even more checks here
-     }
+  
+  tstcase("Full database test", +database) {
+    // This test only runs when you specify +database
+    tstcheck(db_connect() != NULL);
+    tstcheck(db_query("SELECT 1") == 1);
+  }
+  
+  tstcase("Slow performance test", +slow, +database) {
+    // This test needs both +slow and +database to run
+    tstcheck(run_long_query() < 1000);
+  }
+  
+  tstcase("Interactive test", -ci) {
+    // This test runs by default but is skipped in CI
+    tstcheck(prompt_user() == OK);
   }
 }
 ```
 
-By default all tags are disabled. You can disable them when launching the test run.
-See the section ["Command line options"](#command-line) for more details.
+### Tag Behavior Rules
 
+1. **Untagged tests** always run regardless of command-line filters
+2. **Any tagged test** (whether `+tag` or `-tag`) is **skipped by default** without command-line filters
+3. **Command-line filters activate tagged tests:**
+   - `+tag`: Enables tests with matching `+tag`
+   - `-tag`: Enables tests with matching `-tag`  
+   - `+*`: Enables all tests with any `+tag` (but not `-tag` tests)
+4. **Multiple tags on a test:** Test runs if ANY tag matches the filter
 
-You can also set the tag on and off in the code using the `tsttag()` function:
+### Command-Line Tag Filtering
 
-```C
-  tsttag(SimpleRun, 0); // Disable the testst guarded by the SimpleRun tag
-  tsttag(SimpleRun, 1); // Re-enable the testst guarded by the SimpleRun tag
+Control which tests run using command-line arguments:
+
+```bash
+# Run only untagged tests (tagged tests are skipped by default)
+./mytest
+
+# Enable tests tagged with +database
+./mytest +database
+
+# Enable all tests with positive tags (+tag)
+./mytest +*
+
+# Enable tests tagged with -ci
+./mytest -ci
+
+# Combine filters: enable database tests AND ci-incompatible tests
+./mytest +database -ci
+
+# Enable all positive tags except slow ones
+./mytest +* -slow
 ```
 
-### Using make
+**Important**: When you provide ANY filter on the command line, only tests matching that filter
+(plus untagged tests) will run. This is why `-tag` tests need `-tag` on the command line to run.
 
-If you are using the makefile provided in the `test` directory to run your tests,
-you can easily specify which tags to enable by setting the `TSTTAGS` variable:
+### Listing Available Tests and Tags
 
-  ```
-    $ TSTTAGS=-NODB make -B runtest
-  ```
+Use `--list` to see all test cases and their tags:
+
+```bash
+$ ./mytest --list
+"Quick validation"
+"Full database test" +database
+"Slow performance test" +slow, +database
+"Interactive test" -ci
+```
+
+This helps you understand which tests are available and how to filter them.
+
+### Tag Filtering Examples
+
+Given the test suite above, here's what runs with different filters:
+
+| Command | Runs |
+|---------|------|
+| `./mytest` | "Quick validation" only (all tagged tests skipped) |
+| `./mytest +database` | "Quick validation", "Full database test", "Slow performance test" |
+| `./mytest +*` | "Quick validation", "Full database test", "Slow performance test" |
+| `./mytest -ci` | "Quick validation", "Interactive test" |
+| `./mytest +database -ci` | "Quick validation", "Full database test", "Slow performance test", "Interactive test" |
+
+**Key insight**: Think of tags as requiring "activation" from the command line. By default, only
+untagged tests run. You use command-line filters to activate specific groups of tagged tests.
+
+### Practical Use Cases
+
+**Quick smoke tests (default - untagged tests only):**
+```bash
+# Runs only fast, essential tests with no tags
+./mytest
+```
+
+**Development workflow:**
+```bash
+# Run full test suite including optional tests
+./mytest +*
+
+# Database tests only
+./mytest +database
+
+# Everything except slow tests
+./mytest +* -slow
+```
+
+**CI/CD pipeline:**
+```bash
+# Skip interactive/manual tests in automated environments
+./mytest +* -manual
+
+# Run only integration tests
+./mytest +integration
+
+# Full suite excluding platform-specific tests
+./mytest +* -windows
+```
+
+**Debugging specific subsystem:**
+```bash
+# Focus on network tests
+./mytest +network
+
+# Database and network, but not slow tests
+./mytest +database +network -slow
+```
+
+### Best Practices for Tags
+
+1. **Use positive tags (`+tag`) for:**
+   - Optional tests that shouldn't run by default (e.g., `+slow`, `+database`, `+network`)
+   - Tests requiring external resources
+   - Platform-specific tests (e.g., `+windows`, `+linux`)
+   - Deep/exhaustive tests (e.g., `+full`, `+stress`)
+
+2. **Use negative tags (`-tag`) for:**
+   - Tests you want to explicitly exclude in certain environments (e.g., `-ci`, `-manual`)
+   - Tests that conflict with automation
+   - Experimental or unstable tests (e.g., `-experimental`, `-flaky`)
+
+3. **Design your tag strategy:**
+   ```c
+   // Untagged = core smoke tests (always run)
+   tstcase("Basic validation") { ... }
+   
+   // +tag = opt-in (run when explicitly requested)
+   tstcase("Comprehensive test", +full) { ... }
+   
+   // -tag = opt-out (skip when explicitly excluded)
+   tstcase("Manual verification", -automated) { ... }
+   ```
+
+4. **Keep tag names simple and meaningful:**
+   - Good: `slow`, `database`, `network`, `ci`, `manual`, `windows`, `linux`
+   - Avoid: `test1`, `group_a`, `temp`, `foo`
+
+5. **Document your tags:**
+   Add a comment at the top of your test file:
+   ```c
+   // Tags used in this file:
+   //   +database : Tests requiring database connection
+   //   +slow     : Tests taking >1 second
+   //   -ci       : Tests incompatible with CI (interactive, etc.)
+   ```
 <a id="disabling"></a>
 
 ## Disabling tests at compile time
@@ -728,111 +889,492 @@ tstcheck(y > 0, "Expected positive value, got %d", y);
 The `tstexpect()` macro still counts PASS/FAIL/SKIP like `tstcheck()`, but only produces output on failure.
 This keeps your test logs cleaner when you have hundreds or thousands of assertions.
 
+<a id="report-error"></a>
+## Using `--report-error` for CI/CD Integration
+
+By default, TST test programs always return exit code `0`, even when tests fail. This design
+choice prevents a single failing test from stopping an entire chain of tests when running
+multiple test suites in sequence.
+
+However, in automated environments like CI/CD pipelines, you typically want the build to **fail**
+when tests fail. The `--report-error` flag changes the exit behavior to return a non-zero exit
+code when failures occur.
+
+### Exit Code Behavior
+
+| Scenario | Default (no flag) | With `--report-error` |
+|----------|-------------------|----------------------|
+| All tests pass | Exit 0 | Exit 0 |
+| One or more tests fail | Exit 0 | Exit 1 |
+| Tests skipped (no failures) | Exit 0 | Exit 0 |
+
+### Basic Usage
+
+```bash
+# Default behavior - always exits 0
+$ ./mytest
+^^^^^ RSLT \ 2 FAIL | 5 PASS | 0 SKIP 2025-11-27 12:00:00
+$ echo $?
+0
+
+# With --report-error - exits 1 on failure
+$ ./mytest --report-error
+^^^^^ RSLT \ 2 FAIL | 5 PASS | 0 SKIP 2025-11-27 12:00:00
+$ echo $?
+1
+
+# No failures - exits 0 even with flag
+$ ./mytest --report-error
+^^^^^ RSLT \ 0 FAIL | 5 PASS | 0 SKIP 2025-11-27 12:00:00
+$ echo $?
+0
+```
+
+### CI/CD Integration Examples
+
+#### GitHub Actions
+
+```yaml
+name: Run Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build tests
+        run: |
+          cd test
+          make all
+      
+      - name: Run test suite
+        run: |
+          cd test
+          ./t_mytest --report-error
+      
+      # This step only runs if tests pass
+      - name: Deploy
+        if: success()
+        run: echo "Tests passed, deploying..."
+```
+
+#### GitLab CI
+
+```yaml
+test:
+  stage: test
+  script:
+    - cd test && make all
+    - ./t_mytest --report-error --color
+  artifacts:
+    when: always
+    paths:
+      - test/test.log
+```
+
+#### Jenkins
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Test') {
+            steps {
+                sh '''
+                    cd test
+                    make all
+                    ./t_mytest --report-error
+                '''
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: 'test/*.log'
+        }
+    }
+}
+```
+
+#### Travis CI
+
+```yaml
+language: c
+compiler: gcc
+
+script:
+  - make test
+  - cd test && ./t_mytest --report-error
+```
+
+### Combining with Tag Filters
+
+The `--report-error` flag works seamlessly with tag filtering:
+
+```bash
+# Run only fast tests in CI, fail on error
+./mytest -slow --report-error
+
+# Run database tests, fail on error
+./mytest +database --report-error
+
+# Run all tests except manual ones, fail on error  
+./mytest +* -manual --report-error
+```
+
+### Makefile Integration
+
+Add `--report-error` to your test targets:
+
+```makefile
+# Development - don't stop on failures
+test:
+	cd test && ./runtest
+
+# CI target - fail on any test failure
+test-ci:
+	cd test && ./runtest --report-error
+
+# Quick smoke tests for CI
+test-quick:
+	cd test && ./runtest -slow --report-error
+
+# Full test suite for nightly builds
+test-full:
+	cd test && ./runtest +* --report-error --color
+```
+
+Then in your CI configuration:
+
+```bash
+# Fast feedback during development
+make test
+
+# Strict validation in CI
+make test-ci
+```
+
+### Shell Script Integration
+
+Use `--report-error` in test runner scripts:
+
+```bash
+#!/bin/bash
+# run_tests.sh
+
+FAILED=0
+
+echo "Running unit tests..."
+./t_unit --report-error || FAILED=1
+
+echo "Running integration tests..."
+./t_integration +database --report-error || FAILED=1
+
+echo "Running performance tests..."
+./t_performance +slow --report-error || FAILED=1
+
+if [ $FAILED -eq 1 ]; then
+    echo "❌ Some tests failed"
+    exit 1
+else
+    echo "✅ All tests passed"
+    exit 0
+fi
+```
+
+### Docker Integration
+
+```dockerfile
+FROM gcc:latest
+
+WORKDIR /app
+COPY . .
+
+RUN cd test && make all
+
+# Run tests as part of build - will fail build if tests fail
+RUN cd test && ./t_mytest --report-error
+
+# Or as healthcheck
+HEALTHCHECK CMD cd test && ./t_mytest --report-error || exit 1
+```
+
+### Pre-commit Hook Integration
+
+Use `--report-error` in git hooks to prevent commits with failing tests:
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+
+echo "Running tests before commit..."
+
+cd test && make all
+./t_mytest --report-error
+
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Commit aborted."
+    echo "Fix failing tests or use 'git commit --no-verify' to skip."
+    exit 1
+fi
+
+echo "✅ Tests passed. Proceeding with commit."
+exit 0
+```
+
+### Debugging CI Failures
+
+When a test fails in CI with `--report-error`, you get:
+
+1. **Full test output** showing which tests failed
+2. **Non-zero exit code** that stops the pipeline
+3. **Exact line numbers** of failing assertions
+
+Example CI output:
+
+```
+----- SUIT / t_database.c "Database Tests" 2025-11-27 14:32:10
+   15 CASE,--Connection tests
+   17 PASS|  db_connect() != NULL
+   18 FAIL|  db_ping() == 0 "Connection timeout"
+   15     `--- 1 FAIL | 1 PASS | 0 SKIP
+^^^^^ RSLT \ 1 FAIL | 1 PASS | 0 SKIP 2025-11-27 14:32:11
+
+Error: Process completed with exit code 1.
+```
+
+You can immediately see:
+- Which test file failed (`t_database.c`)
+- Which test case failed ("Connection tests")  
+- Exact line number (`18`)
+- What failed (`db_ping() == 0`)
+- Why it failed ("Connection timeout")
+
+### Best Practices
+
+1. **Always use in CI/CD pipelines:**
+   ```bash
+   ./mytest --report-error    # CI builds
+   ```
+
+2. **Optional during development:**
+   ```bash
+   ./mytest                   # Keep working on other tests
+   ```
+
+3. **Combine with environment variables:**
+   ```bash
+   # .bashrc or .zshrc
+   export TSTOPTIONS="--color"
+   
+   # CI configuration
+   export TSTOPTIONS="--color --report-error"
+   ```
+
+4. **Document in README:**
+   ```markdown
+   ## Running Tests
+   
+   Development:
+   ```bash
+   make test
+   ```
+   
+   CI (strict mode):
+   ```bash
+   make test-ci    # Uses --report-error
+   ```
+   ```
+
+5. **Use with appropriate tag filters:**
+   ```bash
+   # CI quick check - skip slow tests
+   ./mytest -slow --report-error
+   
+   # Nightly build - run everything
+   ./mytest +* --report-error
+   ```
+
+### Troubleshooting
+
+**Problem:** CI passes but tests actually failed
+
+**Solution:** Make sure you're using `--report-error`:
+```bash
+# Wrong - CI won't fail
+./mytest
+
+# Correct - CI will fail on test failures
+./mytest --report-error
+```
+
+**Problem:** Want different behavior for different test suites
+
+**Solution:** Use separate commands:
+```bash
+# Unit tests - strict
+./t_unit --report-error
+
+# Experimental tests - don't fail build
+./t_experimental
+```
+
+**Problem:** Tests pass locally but fail in CI
+
+**Solution:** Run locally with same flags:
+```bash
+# Replicate CI environment
+./mytest +* --report-error
+
+# Or use CI tag
+./mytest -ci --report-error
+```
+
 <a id="command-line"></a>
 ## Command line options
 
-When a `tstsuite` is compiled, it will define a main function that will accept the
-the following options.
+When a `tstsuite` is compiled, it creates an executable that accepts several command-line options
+to control test execution and output formatting.
 
-### Help
-Specifing `--help` as argument, you'll get a short help.
+### Listing Tests and Tags
 
-If no tag is specified you'll get something similar to this:
-
-```
-  $ mytest --help
-  Test suite: "A run for my tests"
-  ./mytest [--help] [--color] [--report-error] [--list]
-```
-
-The *Test Scenario* is the title you provided in the `tstsuite()` function.
-
-See below for more details on when there is any tag specified.
-
-### Returning Errors
-
-By default test programs return 0 to ensure that they do not inadvertently stop a chain
-of tests (e.g., when running in a script). However, you can make it return an error 
-(a non-zero value) if a test fails using the `--report-error` option:
+Use `--list` to see all test cases in your suite along with their tags:
 
 ```bash
-  $ t_test --report-error
+$ ./mytest --list
+"Quick validation"
+"Full database test" +database
+"Slow performance test" +slow, +database
+"Interactive test" -ci
 ```
 
-This is useful in CI/CD pipelines where you want the build to fail if tests fail.
+This shows you:
+- The name of each test case
+- Any tags associated with each test (see [Conditional test execution](#conditional) for details)
 
-### Handling tags
+This is useful for:
+- Understanding what tests are available
+- Seeing which tags you can use for filtering
+- Documenting your test suite
 
-If you specified one or more tag, you will receive a help message like this:
+### Returning Errors on Test Failure
 
-```
-  $ mytest --help
-  Test suite: "Switching groups on and off"
-  ./mytest [--help] [--color] [--report-error] [--list] [+/-]tag ...
-  tags: TestDB DeepTest SimpleRun
-```
-that helps you remember which tags you defined.
+By default, test programs return exit code `0` even when tests fail. This prevents a single failing
+test from stopping an entire chain of tests in a script.
 
-By default all tags are *off*, to turn it on you can pass its name to the test program.
-For example, to run `mytest` with the "DeepTest" enabled you can execute it this way:
-
-```
-  $ mytest +DeepTest
-```
-
-You can also switch all the tags on/off using `*`. For example, to enable
-all tags except `SimpleRun`, you can execute the test as follows:
-
-```
-  $ mytest +* -SimpleRun
-```
-### Colored messages
-If your terminal can handle ANSI sequences for colors, you can enable colored message
-with the `--color` option:
-```
-  $ mytest --color
-```
-will print in red the number of failed checks, in green the number of passed checks
-and in yellow the nummber of the skipped ones.
-
-Colors are off by default but you can make them on by default by setting up the `TSTOPTIONS`
-variable as described in the next section.
-
-### Listing Suite Information
-
-Use `--list` to display the test suite title and available tags:
+However, in CI/CD pipelines, you typically want the build to fail when tests fail. Use the 
+`--report-error` flag to make the test program return exit code `1` if any test fails:
 
 ```bash
-  $ mytest --list
-  mytest "Switching groups on and off"
-  tags: TestDB DeepTest SimpleRun
+# Returns 0 even if tests fail (default)
+$ ./mytest
+^^^^^ RSLT \ 2 FAIL | 5 PASS | 0 SKIP
+$ echo $?
+0
+
+# Returns 1 if any test fails
+$ ./mytest --report-error
+^^^^^ RSLT \ 2 FAIL | 5 PASS | 0 SKIP
+$ echo $?
+1
 ```
 
-This is useful for documentation or when you need to remember what tags are available.
+**CI/CD example:**
+```yaml
+# GitHub Actions
+- name: Run tests
+  run: ./mytest --report-error
 
-### Setting defaults
-You can define default arguments by setting up the `TSTOPTIONS` shell variable.
-For example, after:
-
-```
-  export TSTOPTIONS="--color +NoDB"
-```
-
-executing:
-
-```
-  $ ./mytest
+# Jenkins, GitLab CI, etc.
+script:
+  - make test ARGS="--report-error"
 ```
 
-will result in the colored message enabled and the `NoDB` tag set.
+The `--report-error` flag can be combined with tag filters:
+```bash
+$ ./mytest +database --report-error    # Run database tests, fail on errors
+$ ./mytest +* -slow --report-error     # Run all but slow tests, fail on errors
+```
 
+### Tag Filtering
+
+Control which tests run using `+tag` and `-tag` command-line arguments:
+
+```bash
+# Run tests tagged with +database
+$ ./mytest +database
+
+# Enable all tests with positive tags (+tag)
+$ ./mytest +*
+
+# Run tests tagged with -ci (opt-out tests)
+$ ./mytest -ci
+
+# Combine filters
+$ ./mytest +database -ci    # Database tests, but skip CI-incompatible ones
+```
+
+See the [Conditional test execution](#conditional) section for complete documentation on tagging.
+
+### Colored Output
+
+Enable colored output using the `--color` option:
+
+```bash
+$ ./mytest --color
+```
+
+This will display:
+- **Red**: Number of failed tests
+- **Green**: Number of passed tests  
+- **Yellow**: Number of skipped tests
+
+Colors are off by default. You can make them the default by setting the `TSTOPTIONS` 
+environment variable (see below).
+
+### Setting Default Options
+
+Use the `TSTOPTIONS` environment variable to set default command-line arguments:
+
+```bash
+# Always use colors and enable database tests
+export TSTOPTIONS="--color +database"
+
+# Now running ./mytest uses these defaults
+$ ./mytest
+```
+
+You can override environment defaults by specifying different options:
+
+```bash
+$ TSTOPTIONS="--color +database"
+$ ./mytest -database    # Override: disable database tests
+```
+
+### Combining Options
+
+All command-line options can be combined in any order:
+
+```bash
+# Run all tests with colors and fail on error
+$ ./mytest +* --color --report-error
+
+# List tests (ignores other options)
+$ ./mytest --list
+
+# Complex CI scenario
+$ ./mytest +integration -slow -manual --report-error --color
+```
 
 <a id="running-tests"></a>
 
 ## Running your tests
 
 There is no limitation on how you organize and run your tests. Once you have compiled
-the test program, you can launch it on its own or add to a CI pipeline or wathever is 
+the test program, you can launch it on its own or add to a CI pipeline or whatever is 
 most appropriate for you.
 
 As an example I'll describe here how I set up `tst` for self-testing. You may use the 
@@ -916,5 +1458,314 @@ You can also pass the wildcard as first argument:
 tstrun -d test_newsuite '*_login_*' +Interactive +LinearScale
 ```
 Remember to always include it in single quotes to avoid premature shell expansion.
+
+<a id="advanced-example"></a>
+
+## Advanced Example: Putting It All Together
+
+The `t_advanced_example.c` file demonstrates how multiple TST features work 
+together in a realistic testing scenario. It tests a simple key-value store 
+implementation and shows you how to structure a comprehensive test suite.
+
+### What the Example Demonstrates
+
+The example includes:
+
+- **Multiple test cases** - Each testing a specific aspect of functionality
+- **Tag-based organization** - `+slow`, `+stress`, `+valgrind`, `-ci` tags
+- **Data-driven testing** - Using `tstdata` arrays for parameterized tests
+- **Setup/teardown patterns** - Using `tstsection()` for organized test structure
+- **Performance measurement** - Timing operations with `tstclock()` and `tstelapsed()`
+- **Conditional execution** - Skipping tests with `tstskipif()`
+- **Error messages** - Clear, formatted diagnostic messages
+- **Memory management** - Proper cleanup and leak detection patterns
+
+### The Key-Value Store Implementation
+
+The example implements a simple hash-free key-value store (~200 lines):
+
+```c
+typedef struct {
+    char* key;
+    char* value;
+} KVPair;
+
+typedef struct {
+    KVPair* pairs;
+    int count;
+    int capacity;
+} KVStore;
+
+KVStore* kv_create(int capacity);
+void kv_destroy(KVStore* store);
+int kv_set(KVStore* store, const char* key, const char* value);
+const char* kv_get(KVStore* store, const char* key);
+int kv_delete(KVStore* store, const char* key);
+```
+
+This is intentionally simple but realistic enough to demonstrate comprehensive
+testing practices.
+
+### Test Case Breakdown
+
+#### 1. Basic Functionality (Always Runs)
+
+```c
+tstcase("Store creation and destruction") {
+    KVStore* store = NULL;
+    
+    tstsection("Create store with valid capacity") {
+        store = kv_create(10);
+        tstcheck(store != NULL, "Store should be created");
+        tstcheck(store->count == 0, "New store should be empty");
+        tstcheck(store->capacity == 10, "Capacity should be 10, got %d", 
+                 store->capacity);
+    }
+    
+    tstsection("Create store with zero capacity") {
+        store = kv_create(0);
+        tstcheck(store != NULL, "Should handle zero capacity");
+        if (store) tstcheck(store->capacity == 0);
+    }
+    
+    if (store) kv_destroy(store);
+}
+```
+
+**Key features:**
+- Uses `tstsection()` to organize related checks
+- Format strings in `tstcheck()` provide diagnostic values
+- Cleanup happens after all sections complete
+- Tests both normal and edge cases
+
+#### 2. Data-Driven Testing
+
+```c
+tstcase("Data-driven test: Multiple key-value pairs") {
+    KVStore* store = kv_create(10);
+    tstassert(store != NULL);
+    
+    struct { const char* key; const char* value; } tstdata[] = {
+        {"username", "alice123"},
+        {"email", "alice@example.com"},
+        {"age", "25"},
+        {"city", "New York"},
+        {"country", "USA"}
+    };
+    
+    tstsection("Insert and verify each pair") {
+        tstnote("Testing key='%s', value='%s'", 
+                tstcurdata.key, tstcurdata.value);
+        
+        // Insert
+        tstcheck(kv_set(store, tstcurdata.key, tstcurdata.value) == 0,
+                 "Failed to insert key='%s'", tstcurdata.key);
+        
+        // Immediately verify
+        const char* retrieved = kv_get(store, tstcurdata.key);
+        tstcheck(retrieved != NULL, "Key '%s' not found", tstcurdata.key);
+        tstcheck(strcmp(retrieved, tstcurdata.value) == 0,
+                 "Expected '%s', got '%s'", tstcurdata.value, retrieved);
+    }
+    
+    // After all data items processed, verify count
+    tstcheck(store->count == 5, "Expected 5 items, got %d", store->count);
+    
+    kv_destroy(store);
+}
+```
+
+**Key features:**
+- Define test data as an array named `tstdata`
+- Each section runs once per data element
+- Access current data via `tstcurdata.field_name`
+- Use `tstnote()` to document which data is being tested
+- Code after sections runs once, after all data processed
+
+#### 3. Performance Testing with Tags
+
+```c
+tstcase("Performance test: Large dataset", +slow) {
+    const int N = 1000;
+    KVStore* store = kv_create(N);
+    tstassert(store != NULL, "Failed to create large store");
+    
+    clock_t elapsed;
+    
+    tstclock("Insert %d items", N) {
+        for (int i = 0; i < N; i++) {
+            char key[32], value[32];
+            sprintf(key, "key_%d", i);
+            sprintf(value, "value_%d", i);
+            tstassert(kv_set(store, key, value) == 0);
+        }
+    }
+    elapsed = tstelapsed();
+    
+    tstcheck(store->count == N, "Expected %d items, got %d", N, store->count);
+    tstnote("Insert rate: %.2f items/ms", (double)N / elapsed);
+    
+    kv_destroy(store);
+}
+```
+
+**Key features:**
+- Tagged with `+slow` - skipped by default, run with `./t_advanced_example +slow`
+- Uses `tstclock()` to time operations
+- Gets elapsed time with `tstelapsed()`
+- Reports performance metrics with `tstnote()`
+- Uses `tstassert()` inside loops for early exit on failure
+
+#### 4. Conditional Execution
+
+```c
+tstcase("Stress test: Maximum capacity", +stress, -ci) {
+    const int MAX = 10000;
+    KVStore* store = NULL;
+    
+    store = kv_create(MAX);
+    tstskipif(store == NULL) {
+        tstnote("Testing with %d capacity store", MAX);
+        
+        // Fill to capacity
+        for (int i = 0; i < MAX; i++) {
+            char key[32], value[64];
+            sprintf(key, "k%d", i);
+            sprintf(value, "This is a longer value for key %d", i);
+            tstcheck(kv_set(store, key, value) == 0,
+                     "Failed at item %d", i);
+        }
+        
+        tstcheck(store->count == MAX, "Expected full capacity");
+        tstnote("Successfully tested %d items", MAX);
+    }
+    
+    if (store) kv_destroy(store);
+}
+```
+
+**Key features:**
+- Tagged `+stress` and `-ci` (excluded from CI by default)
+- Uses `tstskipif()` to handle allocation failures gracefully
+- Block after `tstskipif()` runs only if condition is false
+- Reports progress with `tstnote()`
+- Handles resource cleanup in all cases
+
+### Running the Advanced Example
+
+**Build and run all tests:**
+```bash
+cd tutorial
+make t_advanced_example
+./t_advanced_example
+```
+
+This runs only the basic tests (untagged). The output shows:
+```
+  • Store creation and destruction
+  • Basic operations
+  • Edge cases and error handling
+  • Data-driven test: Multiple key-value pairs
+```
+
+**Run with slow tests:**
+```bash
+./t_advanced_example +slow
+```
+
+Adds the performance test to the run:
+```
+  • Performance test: Large dataset
+    ○ Insert 1000 items ... 5 ms
+    Insert rate: 200.00 items/ms
+    ○ Retrieve 1000 items ... 3 ms
+    Retrieval rate: 333.33 items/ms
+```
+
+**Run only stress tests:**
+```bash
+./t_advanced_example +stress
+```
+
+**Run everything except CI-excluded tests:**
+```bash
+./t_advanced_example +*
+```
+
+This runs all tests with `+tag`, but still skips tests with `-ci`.
+
+**Run memory leak detection:**
+```bash
+valgrind --leak-check=full ./t_advanced_example +valgrind
+```
+
+The `+valgrind` tagged test creates and destroys 100 stores to exercise
+memory management.
+
+### Testing Patterns Demonstrated
+
+#### Setup/Teardown Pattern
+
+```c
+tstcase("My test") {
+    Resource* res = create_resource();
+    tstassert(res != NULL);  // Abort if setup fails
+    
+    tstsection("Test part 1") {
+        // Tests using res
+    }
+    
+    tstsection("Test part 2") {
+        // More tests using res
+    }
+    
+    // Cleanup runs after all sections
+    cleanup_resource(res);
+}
+```
+
+#### Error Context Pattern
+
+```c
+tstcheck(condition, "Expected %s, got %s (index=%d)", 
+         expected, actual, i);
+```
+
+Always include enough context to diagnose failures without debugging.
+
+#### Early Exit Pattern
+
+```c
+tstassert(critical_operation() == 0, "Setup failed");
+// Only continue if critical operation succeeded
+```
+
+Use `tstassert()` when continuing would cause crashes or meaningless results.
+
+#### Resource Allocation Pattern
+
+```c
+Resource* res = allocate();
+tstskipif(res == NULL) {
+    // Tests that need the resource
+}
+if (res) cleanup(res);  // Always cleanup if allocated
+```
+
+Handles allocation failures gracefully without aborting the entire test run.
+
+### Key Takeaways
+
+1. **Structure matters** - Use sections to organize related checks
+2. **Tags enable flexibility** - Slow/stress/platform-specific tests can be optional
+3. **Data-driven tests reduce duplication** - One test, multiple inputs
+4. **Timing is easy** - `tstclock()` and `tstelapsed()` for performance checks
+5. **Error messages are critical** - Include actual values and context
+6. **Cleanup is important** - Always free resources, even in test code
+7. **Skip gracefully** - `tstskipif()` for conditions outside your control
+
+The complete example is in `t_advanced_example.c` (~300 lines including the 
+implementation). Study it to see how these patterns work together in a 
+realistic test suite.
 
 [Top](#top)

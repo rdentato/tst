@@ -3,7 +3,6 @@
 
 tstsuite("Check Factorial speed")
 {
-
   clock_t recursive_elapsed = 0;
   clock_t iterative_elapsed = 0;
 
@@ -12,21 +11,23 @@ tstsuite("Check Factorial speed")
 
   const int times = 100000;
 
-  tstclock("Recursive") {
-    for (int k=0; k<times; k++)
-      recursive_result = fact_recursive(12);
-  }
-  recursive_elapsed = tstelapsed();
-  tstcheck(recursive_result != 0,"Expect non 0 got: %d", recursive_result);
+  tstcase("Timing tests") {
+    tstclock("Recursive") {
+      for (int k=0; k<times; k++)
+        recursive_result = fact_recursive(12);
+    }
+    recursive_elapsed = tstelapsed();
+    tstcheck(recursive_result != 0,"Expect non 0 got: %d", recursive_result);
 
-  tstclock("Iterative") {
-    for (int k=0; k<times; k++)
-      iterative_result = fact_iterative(12);
+    tstclock("Iterative") {
+      for (int k=0; k<times; k++)
+        iterative_result = fact_iterative(12);
+    }
+    iterative_elapsed = tstelapsed();
+    tstcheck(iterative_result != 0);
   }
-  iterative_elapsed = tstelapsed();
-  tstcheck(iterative_result != 0);
 
-  tstcase("Check perfomance") {
+  tstcase("Check performance") {
     tstcheck(recursive_result  == iterative_result);
     tstcheck(recursive_elapsed >= iterative_elapsed);
   }

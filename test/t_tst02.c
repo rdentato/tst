@@ -4,80 +4,57 @@
 #include "tst.h"
 
 tstsuite("Sections") {
-  tstcase("All sections") {
+  tstcase("Keeping 5 starting from -1") {
     int a = -1;
 
-    tstcase("Keeping 5 starting from %d",a) {
-      
-      tstnote("Performing setup with a = %d",a);
-      tstcheck(a==-1);
-      a = 5;
+    tstnote("Performing setup with a = %d",a);
+    tstcheck(a==-1);
+    a = 5;
+    tstcheck(a==5);
+
+    tstsection("Changing to 8 stating from a = %d",a) {
       tstcheck(a==5);
-
-      tstsection("Changing to 8 stating from a = %d",a) {
-        tstcheck(a==5);
-        a = 8;
-        tstcheck(a==8);
-      }
-      tstsection("Changing to 9 stating from a = %d",a) {
-        tstcheck(a==5);
-        a = 9;
-        tstcheck(a==9);
-      }
-
-      tstnote("Cleanup from a = %d",a);
-      a = -1;
+      a = 8;
+      tstcheck(a==8);
+    }
+    tstsection("Changing to 9 stating from a = %d",a) {
+      tstcheck(a==5);
+      a = 9;
+      tstcheck(a==9);
     }
 
-    tstcheck(a==-1);
+    tstnote("Cleanup from a = %d",a);
   }
 
-  tstcase("No sections") {
+  tstcase("Empty test") {
     int a = -1;
-
-    tstcase("Empty") {
-      a = 5;
-      tstcheck(a==5);
-
-      a = 0;
-    }
-
+    a = 5;
+    tstcheck(a==5);
+    a = 0;
     tstcheck(a==0);
   }
 
-  tstcase("Nested sections") {
-    int a = -1;
+  tstcase("Sections with value changes") {
+    int a = 5;
+    tstcheck(a==5);
 
-    tstcase("keep 100") {
-
-      a = 5;
-      tstcheck(a==5);
-
-      tstsection("Set to 10") {
-        a=10;
-        tstcheck(a==10);
-      }
-
-      tstsection("Set to 100") {
-        tstcase("keep a = %d",a) {
-          a = 100;
-   
-          tstsection("Set to 200") {
-            tstcheck(a==100);
-            a = 200;
-          }
-
-          tstsection("Set to 400") {
-            tstcheck(a==100);
-            a = 400;
-          }
-        }
-        tstcheck(a==400,"Expected 400, got %d", a);
-      }
-
-      a = -1;
+    tstsection("Set to 10") {
+      a=10;
+      tstcheck(a==10);
     }
 
-    tstcheck(a==-1);
+    tstsection("Set to 100 then 200") {
+      a = 100;
+      tstcheck(a==100);
+      a = 200;
+    }
+
+    tstsection("Set to 100 then 400") {
+      a = 100;
+      tstcheck(a==100);
+      a = 400;
+    }
+
+    tstcheck(a==400,"Expected 400, got %d", a);
   }
 }

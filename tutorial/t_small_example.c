@@ -2,7 +2,7 @@
 
 tstsuite("Primary Test Suite")
 {    
-    tstcase("Equality Checks %d, %d", 1, 1) {
+    tstcase("Equality Checks") {
       tstcheck(1 == 1, "Mismatch: %d != %d", 1, 1);
       tstcheck(1 != 1, "Failed on purpose");
     }

@@ -1,0 +1,369 @@
+;; SPDX-FileCopyrightText: © 2025 Remo Dentato <rdentato@gmail.com>
+;; SPDX-License-Identifier: MIT
+;;
+;; BNF Grammar for TST Log Output Format
+;; ======================================
+;;
+;; This grammar describes the complete log output format produced by tst.h
+;; when running test suites in normal execution mode (not --list mode).
+;;
+;; The log is written to stderr and follows a hierarchical structure:
+;;   Suite → Cases → Sections → Assertions/Notes/Clock/Output
+;;
+;; Line Numbering Convention:
+;;   Most lines start with a 5-character-wide line number field showing
+;;   the source line where the construct appears, followed by a space.
+;;
+;; Notation:
+;;   ::=       production rule
+;;   |         alternative
+;;   [ ... ]   optional (zero or one)
+;;   { ... }   repetition (zero or more)
+;;   "..."     literal string (case-sensitive)
+;;   <...>     non-terminal
+;;   (* ... *) comment
+;;
+
+<log> ::= <normal-mode-log> | <list-mode-log>
+
+<normal-mode-log> ::= <suite-header> { <case> | <skipped-case> } <suite-footer>
+
+<list-mode-log> ::= { <list-case-line> }
+
+
+;; ============================================================================
+;; Suite-Level Elements
+;; ============================================================================
+
+<suite-header> ::= "----- SUIT / " <filename> " \"" <suite-title> "\" " <timestamp> [ " (disabled)" ] <newline>
+
+<suite-footer> ::= <suite-footer-normal> | <suite-footer-abort>
+
+<suite-footer-normal> ::= "^^^^^ RSLT \\ " <result-summary> " " <timestamp> <newline>
+
+<suite-footer-abort> ::= <newline> "^^^^^ ABRT \\ " <result-summary> " " <timestamp> <newline>
+
+<result-summary> ::= <integer> " FAIL | " <integer> " PASS | " <integer> " SKIP"
+
+
+;; ============================================================================
+;; Case-Level Elements
+;; ============================================================================
+
+<case> ::= <case-header> { <case-body-element> } <case-footer>
+
+<case-header> ::= <line-number> " CASE,--" <case-title> <newline>
+
+<case-footer> ::= <line-number> "     `--- " <result-summary> <newline>
+
+<skipped-case> ::= <line-number> " SKPT|,-(" <case-title> ")" <newline>
+
+<case-body-element> ::= <check-line>
+                      | <note-line>
+                      | <clock-line>
+                      | <output-block>
+                      | <section>
+                      | <skip-block>
+
+
+;; ============================================================================
+;; Assertion/Check Elements
+;; ============================================================================
+
+<check-line> ::= <pass-line> | <fail-line> | <skip-line>
+
+<pass-line> ::= <line-number> " PASS|  " <expression> <newline>
+
+<fail-line> ::= <line-number> " FAIL|  " <expression> [ " \"" <message> "\"" ] <newline>
+
+<skip-line> ::= <line-number> " SKIP|  " <expression> <newline>
+
+
+;; ============================================================================
+;; Section Elements
+;; ============================================================================
+
+<section> ::= <section-header> { <case-body-element> } <section-footer>
+
+<section-header> ::= <line-number> " SCTN|,-- " <section-title> <newline>
+
+<section-footer> ::= <line-number> "     |`---" <newline>
+
+
+;; ============================================================================
+;; Skip Block (tstskipif)
+;; ============================================================================
+
+<skip-block> ::= <skip-block-header> { <skip-line> } <skip-block-footer>
+
+<skip-block-header> ::= <line-number> " SKPT|,-(" <condition> ")" <newline>
+
+<skip-block-footer> ::= <line-number> "     |`---" <newline>
+
+
+;; ============================================================================
+;; Note and Clock Elements
+;; ============================================================================
+
+<note-line> ::= <line-number> " NOTE: " <message> <newline>
+
+<clock-line> ::= <line-number> " CLCK:  " <clock-value> " " <time-unit> "s " <description> <newline>
+
+<time-unit> ::= "n" | "u" | "m"
+              (* nanoseconds, microseconds, or milliseconds *)
+
+
+;; ============================================================================
+;; Output Capture Block (tstouterr)
+;; ============================================================================
+
+<output-block> ::= <output-header> <captured-output> <output-footer>
+
+<output-header> ::= <line-number> " <<<<< " <description> <newline>
+
+<captured-output> ::= { <any-text-line> }
+                    (* arbitrary output from the test code *)
+
+<output-footer> ::= <line-number> " >>>>>" <newline>
+
+
+;; ============================================================================
+;; List Mode Output (--list flag)
+;; ============================================================================
+
+<list-case-line> ::= "\"" <case-title> "\"" [ " " <tag-list> ] <newline>
+
+<tag-list> ::= <tag> { ", " <tag> }
+
+<tag> ::= <plus-tag> | <minus-tag>
+
+<plus-tag> ::= "+" <tag-name>
+
+<minus-tag> ::= "-" <tag-name>
+
+<tag-name> ::= <identifier>
+             (* alphanumeric plus underscore, starting with letter or underscore *)
+
+
+;; ============================================================================
+;; Basic Terminals
+;; ============================================================================
+
+<line-number> ::= <spaces> <integer>
+                (* 5 characters wide, right-aligned *)
+
+<spaces> ::= " " { " " }
+
+<integer> ::= <digit> { <digit> }
+
+<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+<filename> ::= <path-component> { "/" <path-component> }
+
+<path-component> ::= <char> { <char> }
+
+<suite-title> ::= <text>
+
+<case-title> ::= <text>
+
+<section-title> ::= <text>
+
+<description> ::= <text>
+
+<message> ::= <text>
+
+<expression> ::= <text>
+               (* the stringified C expression being tested *)
+
+<condition> ::= <text>
+              (* the stringified skip condition *)
+
+<clock-value> ::= <integer>
+                (* elapsed clock ticks *)
+
+<timestamp> ::= <year> "-" <month> "-" <day> " " <hour> ":" <minute> ":" <second>
+
+<year> ::= <digit> <digit> <digit> <digit>
+
+<month> ::= <digit> <digit>
+
+<day> ::= <digit> <digit>
+
+<hour> ::= <digit> <digit>
+
+<minute> ::= <digit> <digit>
+
+<second> ::= <digit> <digit>
+
+<identifier> ::= ( <letter> | "_" ) { <letter> | <digit> | "_" }
+
+<letter> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m"
+           | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+           | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M"
+           | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+
+<text> ::= { <printable-char> }
+
+<printable-char> ::= <letter> | <digit> | <symbol> | " "
+
+<symbol> ::= "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+"
+           | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">" | "?"
+           | "@" | "[" | "\\" | "]" | "^" | "_" | "`" | "{" | "|" | "}" | "~"
+
+<char> ::= <printable-char>
+
+<any-text-line> ::= { <printable-char> } <newline>
+
+<newline> ::= <LF>
+            (* line feed character, ASCII 10 *)
+
+
+;; ============================================================================
+;; Semantic Notes
+;; ============================================================================
+;;
+;; Line Numbering:
+;;   - Line numbers are taken from __LINE__ at the point where the macro
+;;     is invoked in the source code
+;;   - Formatted as %5d (5-character-wide, right-aligned integer)
+;;   - For case headers, the line number is where tstcase() appears
+;;   - For case footers, it repeats the case header line number
+;;   - For checks/notes/sections, it's the __LINE__ of that statement
+;;
+;; Suite Header:
+;;   - "SUIT /" marker (note: intentional typo, kept for compatibility)
+;;   - Filename from __FILE__
+;;   - Suite title from tstsuite() argument
+;;   - Timestamp in ISO-like format (YYYY-MM-DD HH:MM:SS)
+;;   - Optional " (disabled)" suffix for disabled suites (tst_suite)
+;;
+;; Case Structure:
+;;   - Header: "CASE,--" with case title
+;;   - Body: indented assertions, notes, sections, etc.
+;;   - Footer: "    `---" with result summary for this case only
+;;
+;; Section Structure:
+;;   - Header: "SCTN|,--" with section description
+;;   - Body: nested case-body elements
+;;   - Footer: "    |`---"
+;;   - Sections can repeat (data-driven testing pattern)
+;;
+;; Skip Block:
+;;   - Created by tstskipif(condition) when condition is true
+;;   - Header: "SKPT|,-(" with stringified condition ")"
+;;   - Body: all checks inside become SKIP lines
+;;   - Footer: "    |`---"
+;;
+;; Skipped Case:
+;;   - Single-line format when case is filtered by tags
+;;   - "SKPT|,-(" case-title ")"
+;;   - No body, no footer
+;;
+;; Assertions:
+;;   - PASS: condition evaluated to true
+;;   - FAIL: condition evaluated to false
+;;     - May include formatted message in quotes
+;;     - Message from tstcheck(expr, "fmt", ...) arguments
+;;   - SKIP: inside a tstskipif block or when tst_skip_test is set
+;;   - Expression is the stringified condition (#expr in macro)
+;;
+;; Clock Timing:
+;;   - tstclock("description") { ... } measures elapsed time
+;;   - Output: "CLCK:  <ticks> <unit>s <description>"
+;;   - Unit: "n" (nano), "u" (micro), or "m" (milli) based on CLOCKS_PER_SEC
+;;
+;; Output Capture:
+;;   - tstouterr("description") captures multi-line output
+;;   - Wrapped in "<<<<<" header and ">>>>>" footer
+;;   - Contains arbitrary text from test code
+;;
+;; Result Summary:
+;;   - Format: "<F> FAIL | <P> PASS | <S> SKIP"
+;;   - Appears at case footer (per-case counts)
+;;   - Appears at suite footer (total counts)
+;;
+;; Abort Behavior:
+;;   - tstassert() causes early exit on failure
+;;   - Suite footer changes from "RSLT" to "ABRT"
+;;   - Remaining tests do not execute
+;;
+;; List Mode (--list):
+;;   - Only outputs case names and tags
+;;   - One line per case: "<case-title>" [<tag-list>]
+;;   - No suite header/footer
+;;   - No line numbers
+;;   - Test bodies do not execute
+;;
+;; ============================================================================
+;; Examples
+;; ============================================================================
+;;
+;; Example 1: Simple passing test
+;; -------------------------------
+;; ----- SUIT / test.c "My Suite" 2025-11-28 10:00:00
+;;     5 CASE,--Simple test
+;;     6 PASS|  1 == 1
+;;     5     `--- 0 FAIL | 1 PASS | 0 SKIP
+;; ^^^^^ RSLT \ 0 FAIL | 1 PASS | 0 SKIP 2025-11-28 10:00:01
+;;
+;; Example 2: Failing test with message
+;; -------------------------------------
+;;     8 CASE,--Math test
+;;     9 FAIL|  2 + 2 == 5 "Expected 5, got 4"
+;;     8     `--- 1 FAIL | 0 PASS | 0 SKIP
+;;
+;; Example 3: Section with multiple checks
+;; ----------------------------------------
+;;    12 CASE,--Section test
+;;    13 SCTN|,-- First section
+;;    14 PASS|  x == 1
+;;    15 PASS|  y == 2
+;;    13     |`---
+;;    12     `--- 0 FAIL | 2 PASS | 0 SKIP
+;;
+;; Example 4: Skipped case by tag filter
+;; --------------------------------------
+;;    20 SKPT|,-(Tagged test)
+;;
+;; Example 5: Skip block
+;; ----------------------
+;;    25 CASE,--Skip block test
+;;    26 SKPT|,-(should_skip == 1)
+;;    27 SKIP|  check1()
+;;    28 SKIP|  check2()
+;;    26     |`---
+;;    25     `--- 0 FAIL | 0 PASS | 2 SKIP
+;;
+;; Example 6: Clock timing
+;; ------------------------
+;;    32 CASE,--Performance test
+;;    33 CLCK:  1234 us Sorting algorithm
+;;    32     `--- 0 FAIL | 0 PASS | 0 SKIP
+;;
+;; Example 7: Output capture
+;; --------------------------
+;;    40 CASE,--Output test
+;;    41 <<<<< Debug output
+;; [0] = 10
+;; [1] = 20
+;; [2] = 30
+;;
+;;    41 >>>>>
+;;    40     `--- 0 FAIL | 0 PASS | 0 SKIP
+;;
+;; Example 8: Abort on assertion failure
+;; --------------------------------------
+;; ----- SUIT / test.c "Abort test" 2025-11-28 10:05:00
+;;    50 CASE,--Critical test
+;;    51 FAIL|  ptr != NULL "Null pointer"
+;;    50     `--- 1 FAIL | 0 PASS | 0 SKIP
+;; ^^^^^ ABRT \ 1 FAIL | 0 PASS | 0 SKIP 2025-11-28 10:05:00
+;;
+;; Example 9: List mode output
+;; ----------------------------
+;; "Untagged test"
+;; "Database test" +RequiresDB
+;; "Slow test" +SlowTests, -CI
+;; "Mixed tags" +Alpha, -Beta
+;;
+;; ============================================================================
