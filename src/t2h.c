@@ -399,6 +399,7 @@ static int classify_line(const char *line) {
 // Forward Declarations
 // ============================================================================
 
+static int compare_testcase_by_line(const void *a, const void *b);
 static int parse_logs(ProgramState *state, FILE *input, const char *filename);
 static int generate_html(ProgramState *state, FILE *output);
 static void extract_suite_sources(TestSuite *suite, const char *log_path);
@@ -858,7 +859,7 @@ static int parse_logs(ProgramState *state, FILE *input, const char *filename) {
         // Check for case end marker (exclude group end markers like "|`---")
         if (strstr(line, "`---") && !strstr(line, "|`---") && current_case) {
             parse_case_result(line, current_case);
-            current_case->log_end = current_suite->log_line_count;
+            current_case->log_end = current_suite->log_line_count - 1;
             // Skip adding result line to log to save space
             current_case = NULL;
             continue;
@@ -880,9 +881,22 @@ static int parse_logs(ProgramState *state, FILE *input, const char *filename) {
         }
     }
     
-    // After parsing all suites, extract source code for test cases (FUNC-006)
+    // After parsing all suites, sort test cases by line number and extract source
+    // RATIONALE: Source extraction uses single-pass file reading, which requires
+    //            test cases to be in ascending line number order. Test execution
+    //            order may differ from source order (e.g., when using test filters),
+    //            so we sort here to ensure the extraction algorithm's invariant holds.
     for (int i = 0; i < state->suite_count; i++) {
-        extract_suite_sources(&state->suites[i], filename);
+        TestSuite *suite = &state->suites[i];
+        
+        // Sort test cases by source line number (ascending)
+        if (suite->case_count > 0 && suite->cases) {
+            qsort(suite->cases, suite->case_count, sizeof(TestCase), 
+                  compare_testcase_by_line);
+        }
+        
+        // Extract source code (now guaranteed monotonic line numbers)
+        extract_suite_sources(suite, filename);
     }
     
     return 1;
@@ -891,6 +905,26 @@ static int parse_logs(ProgramState *state, FILE *input, const char *filename) {
 // ============================================================================
 // Source Code Extraction (04_source_extraction.md - FUNC-006)
 // ============================================================================
+
+// Comparison function for sorting test cases by line number
+// USAGE: Used by qsort() to sort suite->cases[] before source extraction
+// RETURNS: <0 if a before b, >0 if a after b, 0 if equal
+// RATIONALE: Source extraction assumes monotonic line numbers for single-pass
+//            efficiency. Sorting ensures this invariant holds even if test
+//            execution order differs from source order.
+static int compare_testcase_by_line(const void *a, const void *b) {
+    const TestCase *tc_a = (const TestCase *)a;
+    const TestCase *tc_b = (const TestCase *)b;
+    
+    // Handle cases with line_number = 0 (malformed or missing)
+    // Push them to the end so they don't interfere with extraction
+    if (tc_a->line_number == 0 && tc_b->line_number == 0) return 0;
+    if (tc_a->line_number == 0) return 1;   // a goes after b
+    if (tc_b->line_number == 0) return -1;  // b goes after a
+    
+    // Normal comparison
+    return tc_a->line_number - tc_b->line_number;
+}
 
 // Try to find source file in multiple locations
 static FILE *find_source_file(const char *source_filename, const char *log_path) {
@@ -1050,6 +1084,8 @@ static int is_c_source_file(const char *filename) {
 }
 
 // Extract source code for all test cases in a suite (optimized single-pass)
+// PREREQUISITE: Test cases MUST be sorted by line_number (ascending) before calling
+//               This is enforced by qsort() in parse_logs() after parsing completes
 // ALGORITHM: Single-pass file reading with brace-matching state machine
 // COMPLEXITY: O(n*m) where n=file lines, m=average line length
 // MEMORY: Stack-allocated temp_lines[MAX_SOURCE_LINES] buffer per case

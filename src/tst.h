@@ -35,6 +35,7 @@ static int tst_fail = 0;
 static int tst_skip = 0;
 static const char* tst_title = NULL;
 static int tst_case_ln = 0;
+int tst_list_opt = 0;
 
 const char *tst_str_skip      = "SKIP|  ";
 const char *tst_str_fail      = "FAIL|  ";
@@ -163,16 +164,16 @@ static inline int tst_check_tags(const char* tags_str) {
     for (int i = 1; i < argc; i++) { \
       if (strcmp(argv[i], "--report-error") == 0) tst_report_err = 1; \
     } \
-    if (argc > 1 && strcmp(argv[1], "--list") == 0) {tst__run(1); exit(0); }\
+    if (argc > 1 && strcmp(argv[1], "--list") == 0) {tst_list_opt = 1; tst__run(); exit(0); }\
     if (CLOCKS_PER_SEC > ((clock_t)1000000) + tst_zero) tst_clock_unit = "n"; \
     else if(CLOCKS_PER_SEC > ((clock_t)1000) + tst_zero) tst_clock_unit = "u"; \
     else tst_clock_unit = "m"; \
     fprintf(stderr, "----- %s %s \"%s\" %s%s\n", tst_str_file, __FILE__, tst_title, tst_time(), (tst_?"":" (disabled)"));\
-    if (tst_) tst__run(0); \
+    if (tst_) tst__run(); \
     tst_zero &= tst_usestatic; \
     fputs(tst_str_file_end,stderr); tst_prt_results(tst_fail, tst_pass, tst_skip); fprintf(stderr," %s\n",tst_time());\
     return ((tst_fail > 0) * tst_report_err); \
-  } void tst__run(int tst_list_opt) 
+  } void tst__run() 
 
 #define tstsuite(tst_title, ...)  tst_main((!tst_zero), tst_title) 
 #define tst_suite(tst_title, ...) tst_main(( tst_zero), tst_title)
