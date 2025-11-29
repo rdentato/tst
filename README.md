@@ -330,9 +330,9 @@ t2h --light test.log > report.html
 <td width="50%">
 
 **Rich Visualizations**
-- SVG pie charts for test distribution
+- Collapsable test case details
 - Color-coded status indicators
-- Progress bars with percentages
+- Color-coded log lines
 - Syntax-highlighted source code
 
 </td>
